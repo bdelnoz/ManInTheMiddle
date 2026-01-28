@@ -27,7 +27,6 @@ Table of Contents
    - system state backup contents
 8. Capture & analysis workflows
    - Wireshark, tshark, tcpdump examples
-   - Filtering recipes for Kodi/Stalker artifacts
    - Post-processing with Zeek/tshark/scripts
 9. Troubleshooting (categorized by failure mode)
 10. Advanced options & automation
@@ -374,15 +373,7 @@ tshark -r capture.pcap -Y http.request -T fields -e http.host -e http.request.ur
 Extract DNS queries and responses:
 tshark -r capture.pcap -Y dns -T fields -e dns.qry.name -e dns.resp.addr
 
-C. Filters to find Kodi / Stalker artifacts
-- Look for typical keywords in URIs or payloads:
-  - /stalker_portal, /player_api.php, get_profile, m3u
-- Wireshark display filter examples:
-  - ip.addr == <SOURCESVR_IP> && http.request.uri contains "player_api"
-  - http and (http.request.uri contains "m3u" or http.request.uri contains "playlist")
-  - dns.qry.name contains "stalker" or dns.qry.name contains "mag"
-
-D. Post-processing automation examples
+C. Post-processing automation examples
 Use Zeek to produce extracted HTTP logs:
 
 zeek -r capture.pcap

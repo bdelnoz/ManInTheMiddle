@@ -802,7 +802,6 @@ Script: ${SCRIPT_NAME}
 
 DESCRIPTION:
     Configure Linux as a Man-In-The-Middle router to capture and analyze
-    SOURCESVR HTTP traffic for replication in Kodi Stalker configuration.
 
     This script:
     - Creates a reversible MITM network setup
@@ -921,13 +920,6 @@ SOURCESVR DEVICE CONFIGURATION:
     - Gateway: ${LAN_IP}
     - DNS: ${LAN_IP} (routed transparently to WAN DNS)
 
-WHAT TO CAPTURE FOR KODI STALKER:
-    1. Initial connection URLs and parameters
-    2. HTTP headers (User-Agent, cookies, tokens)
-    3. Authentication requests
-    4. Playlist/M3U URLs
-    5. Stream URLs and formats
-    6. MAC address or serial number parameters
 
 FILES CREATED:
     Logs: ${LOGS_DIR}/log.${SCRIPT_NAME}.<timestamp>.${VERSION}.log
