@@ -552,14 +552,14 @@ bind-interfaces
 # DHCP for Ethernet (eth1)
 dhcp-range=interface:${LAN_IF},${DHCP_RANGE_START},${DHCP_RANGE_END},${DHCP_LEASE_TIME}
 dhcp-option=interface:${LAN_IF},3,${LAN_IP}
-dhcp-option=interface:${LAN_IF},6,${LAN_IP}
+dhcp-option=interface:${LAN_IF},6,${DNS1_IP},${DNS2_IP}
 
 # DHCP for WiFi (wlan1)
 dhcp-range=interface:${WIFI_IF},${WIFI_DHCP_START},${WIFI_DHCP_END},${DHCP_LEASE_TIME}
 dhcp-option=interface:${WIFI_IF},3,${WIFI_IP}
-dhcp-option=interface:${WIFI_IF},6,${WIFI_IP}
+dhcp-option=interface:${WIFI_IF},6,${DNS1_IP},${DNS2_IP}
 
-port=0
+port=53
 log-dhcp
 EOF
 

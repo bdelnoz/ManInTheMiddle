@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ManInTheMiddle - GitHub Project</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: #58a6ff;
+            box-shadow: 0 8px 32px rgba(88, 166, 255, 0.2);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #58a6ff 0%, #0d47a1 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .header p {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 300;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .intro {
+            font-size: 16px;
+            line-height: 1.7;
+            margin-bottom: 35px;
+            color: #e6edf3;
+        }
+
+        .intro strong {
+            color: #58a6ff;
+        }
+
+        .section {
+            margin-bottom: 35px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #58a6ff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .list-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            font-size: 15px;
+            line-height: 1.5;
+            color: #d0d7de;
+        }
+
+        .list-item-icon {
+            flex-shrink: 0;
+            font-size: 20px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .highlight-box {
+            background: rgba(88, 166, 255, 0.1);
+            border-left: 3px solid #58a6ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+            font-size: 14px;
+            line-height: 1.7;
+            color: #d0d7de;
+        }
+
+        .highlight-box strong {
+            color: #58a6ff;
+        }
+
+        .cta-box {
+            background: rgba(88, 166, 255, 0.15);
+            border: 1px solid #58a6ff;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .cta-box p {
+            font-size: 15px;
+            margin-bottom: 15px;
+            color: #e6edf3;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #58a6ff 0%, #1f6feb 100%);
+            color: white;
+            padding: 12px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(88, 166, 255, 0.3);
+        }
+
+        .contact-section {
+            background: rgba(246, 190, 144, 0.1);
+            border: 1px solid rgba(246, 190, 144, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .contact-section p {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #d0d7de;
+        }
+
+        .contact-link {
+            display: inline-block;
+            color: #f6be90;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .contact-link:hover {
+            color: #58a6ff;
+            text-decoration: underline;
+        }
+
+        .footer {
+            padding: 30px;
+            border-top: 1px solid #30363d;
+            text-align: center;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .tag {
+            background: rgba(88, 166, 255, 0.2);
+            border: 1px solid rgba(88, 166, 255, 0.3);
+            color: #58a6ff;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .tag:hover {
+            background: rgba(88, 166, 255, 0.3);
+            border-color: #58a6ff;
+        }
+
+        .emoji {
+            font-size: 28px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1><span class="emoji">🔐</span> ManInTheMiddle</h1>
+                <p>Network Testing & Packet Capture Script</p>
+            </div>
+
+            <div class="content">
+                <p class="intro">
+                    Excited to share <strong>mitm-sourcesvr.sh</strong> (v3.0) — a comprehensive Bash script that transforms a Kali Linux machine into a controlled MITM router for advanced packet capture and network analysis. Built this for fun while diving deep into networking & packet analysis! 😄
+                </p>
+
+                <div class="section">
+                    <div class="section-title">
+                        <span>⚙️</span> Core Features
+                    </div>
+                    <div class="list">
+                        <div class="list-item">
+                            <div class="list-item-icon">✅</div>
+                            <div>Automated WiFi hotspot (hostapd) + isolated Ethernet interface</div>
+                        </div>
+                        <div class="list-item">
+                            <div class="list-item-icon">✅</div>
+                            <div>Intelligent DHCP management with dnsmasq on separate subnets</div>
+                        </div>
+                        <div class="list-item">
+                            <div class="list-item-icon">✅</div>
+                            <div>Transparent DNS routing via iptables for deterministic analysis</div>
+                        </div>
+                        <div class="list-item">
+                            <div class="list-item-icon">✅</div>
+                            <div>Complete system state backup/restore (iptables, sysctl, interfaces)</div>
+                        </div>
+                        <div class="list-item">
+                            <div class="list-item-icon">✅</div>
+                            <div>Simulation mode & detailed logging for step-by-step diagnostics</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">
+                        <span>🎯</span> Use Cases
+                    </div>
+                    <div class="list">
+                        <div class="list-item">
+                            <div class="list-item-icon">→</div>
+                            <div>Reverse engineering device authentication & playlist retrieval</div>
+                        </div>
+                        <div class="list-item">
+                            <div class="list-item-icon">→</div>
+                            <div>Capturing HTTP endpoints and parameters from network clients</div>
+                        </div>
+                        <div class="list-item">
+                            <div class="list-item-icon">→</div>
+                            <div>Network forensics & packet analysis teaching labs</div>
+                        </div>
+                        <div class="list-item">
+                            <div class="list-item-icon">→</div>
+                            <div>Testing device behavior under DNS coercion scenarios</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="highlight-box">
+                    <strong>⚡ Key Highlights:</strong><br><br>
+                    Separate subnets (192.168.50.x & 192.168.51.x) • Safe restoration with fallback mechanisms • Comprehensive Kali Linux compatibility • Detailed troubleshooting guide • Full documentation with forensics guidance
+                </div>
+
+                <div class="contact-section">
+                    <p>Have questions or feedback?</p>
+                    <a href="mailto:bruno.delnoz@protonmail.com" class="contact-link">bruno.delnoz@protonmail.com</a>
+                </div>
+
+                <div class="cta-box">
+                    <p><strong>⚠️ Important:</strong> Use only on systems/networks you own or have explicit authorization to test.</p>
+                    <a href="https://github.com/bdelnoz/ManInTheMiddle" class="cta-button">View on GitHub</a>
+                </div>
+            </div>
+
+            <div class="footer">
+                <div class="tags">
+                    <span class="tag">#Cybersecurity</span>
+                    <span class="tag">#NetworkAnalysis</span>
+                    <span class="tag">#Kali</span>
+                    <span class="tag">#PacketCapture</span>
+                    <span class="tag">#NetworkForensics</span>
+                    <span class="tag">#PenetrationTesting</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
