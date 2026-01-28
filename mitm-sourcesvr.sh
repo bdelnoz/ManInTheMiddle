@@ -50,6 +50,8 @@ LAN_NETMASK="24"                     # Netmask for LAN network
 DHCP_RANGE_START="192.168.50.10"     # DHCP pool start address (Ethernet)
 DHCP_RANGE_END="192.168.50.50"       # DHCP pool end address (Ethernet)
 DHCP_LEASE_TIME="12h"                # DHCP lease duration
+DNS1_IP="1.1.1.1"
+DNS2_IP="1.0.0.1"
 
 # WiFi Hotspot Configuration
 WIFI_ENABLED="true"                  # WiFi hotspot ENABLED by default
@@ -59,7 +61,7 @@ WIFI_DHCP_START="192.168.51.10"      # DHCP pool start for WiFi
 WIFI_DHCP_END="192.168.51.50"        # DHCP pool end for WiFi
 WIFI_ENABLED="true"                  # WiFi hotspot ENABLED by default
 WIFI_SSID="WLAN_MITM"                # SSID of the WiFi hotspot
-WIFI_PASSWORD="MITM_AP_PASSWORD"      # WPA2 password (min 8 chars)
+WIFI_PASSWORD="BALBLABLA"      # WPA2 password (min 8 chars)
 WIFI_BAND="a"                        # WiFi band: a=5GHz, g=2.4GHz
 WIFI_CHANNEL="36"                    # WiFi channel (5GHz: 36,40,44,48 / 2.4GHz: 1-13)
 WIFI_COUNTRY="BE"                    # Country code (Belgium)
