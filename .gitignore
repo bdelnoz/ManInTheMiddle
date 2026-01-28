@@ -1,0 +1,23 @@
+
+# Section added automatically by mitm-iptv-capture.sh
+/logs
+
+# Section added automatically by mitm-iptv-capture-claude.sh
+/results
+/outputs
+/infos
+
+# Logs de création du repo - ajoutés automatiquement
+creation_log/
+
+# Section added automatically by mitm-iptv-sourcesvr.sh
+
+# Section added automatically by mitm-iptv-sourcesvr-lechat.2.0.sh
+
+# Section added automatically by mitm-iptv-sourcesvr-chatgpt.2.0.0.sh
+
+# Section added automatically by mitm-iptv-sourcesvr-claude.sh
+
+# Section added automatically by mitm-iptv-sourcesvr.v3.sh
+
+# Section added automatically by mitm-sourcesvr.sh
