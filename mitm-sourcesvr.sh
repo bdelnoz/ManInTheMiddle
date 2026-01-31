@@ -43,6 +43,11 @@ set -e
 LAN_IF="eth1"                        # Ethernet interface for SOURCESVR device
 WAN_IF="wlan0"                       # Interface connected to Internet
 WIFI_IF="wlan1"                      # WiFi interface for hotspot MITM
+# WAN_IF="wlan0"    # MediaTek en mode client (connectée à Guest-Orange) ✓
+# WIFI_IF="wlan1"   # TP-Link pour hotspot MITM ✓
+# LAN_IF="eth1"     # Ethernet ✓
+
+
 
 # LAN Configuration
 LAN_IP="192.168.50.1"                # IP address for LAN gateway (Ethernet)
@@ -59,9 +64,8 @@ WIFI_IP="192.168.51.1"               # IP address for WiFi gateway
 WIFI_NETMASK="24"                    # Netmask for WiFi network
 WIFI_DHCP_START="192.168.51.10"      # DHCP pool start for WiFi
 WIFI_DHCP_END="192.168.51.50"        # DHCP pool end for WiFi
-WIFI_ENABLED="true"                  # WiFi hotspot ENABLED by default
 WIFI_SSID="WLAN_MITM"                # SSID of the WiFi hotspot
-WIFI_PASSWORD="BALBLABLA"      # WPA2 password (min 8 chars)
+WIFI_PASSWORD="Mitm123456.2026"      # WPA2 password (min 8 chars)
 WIFI_BAND="a"                        # WiFi band: a=5GHz, g=2.4GHz
 WIFI_CHANNEL="36"                    # WiFi channel (5GHz: 36,40,44,48 / 2.4GHz: 1-13)
 WIFI_COUNTRY="BE"                    # Country code (Belgium)
@@ -378,38 +382,106 @@ configure_wifi_hotspot() {
         ieee80211ac="1"  # Enable 802.11ac for 5GHz
     fi
 
+# interface=${WIFI_IF}
+# driver=nl80211
+# ssid=${WIFI_SSID}
+# country_code=${WIFI_COUNTRY}
+# hw_mode=a
+# channel=${WIFI_CHANNEL}
+# ieee80211n=1
+# ieee80211ac=0
+# ht_capab=[HT20][SHORT-GI-20]
+# wmm_enabled=1
+# ieee80211d=1
+# auth_algs=1
+# wpa=2
+# wpa_key_mgmt=WPA-PSK
+# rsn_pairwise=CCMP
+# wpa_passphrase=${WIFI_PASSWORD}
+# macaddr_acl=0
+# ignore_broadcast_ssid=0
+
+
     # Create hostapd configuration
     log "[WiFi] (3/4) Creating hostapd configuration"
     cat > "$HOSTAPD_CONF" <<EOF
-# hostapd configuration for MITM WiFi hotspot
+# hostapd configuration for MITM WiFi hotspot (MAX THROUGHPUT - ${WIFI_BAND} ${WIFI_CHANNEL}MHz)
+# hostapd configuration for MITM WiFi hotspot (MAX THROUGHPUT - 5GHz 149 @ 80MHz)
 interface=${WIFI_IF}
 driver=nl80211
 ssid=${WIFI_SSID}
 hw_mode=${WIFI_BAND}
 channel=${WIFI_CHANNEL}
 country_code=${WIFI_COUNTRY}
-# txpower=30
+
 # 802.11n settings (HT - High Throughput)
 ieee80211n=1
-ht_capab=[HT40+][SHORT-GI-20][SHORT-GI-40][DSSS_CCK-40]
+ht_capab=[HT40+][SHORT-GI-20][SHORT-GI-40][RX-STBC1][MAX-AMSDU-7935]
+
 # 802.11ac settings (VHT - Very High Throughput) for 5GHz
-ieee80211ac=$([ "$WIFI_BAND" = "a" ] && echo "1" || echo "0")
-$([ "$WIFI_BAND" = "a" ] && echo "vht_capab=[MAX-MPDU-11454][SHORT-GI-80][TX-STBC-2BY1][RX-STBC-1]")
-$([ "$WIFI_BAND" = "a" ] && echo "vht_oper_chwidth=1")
-$([ "$WIFI_BAND" = "a" ] && echo "vht_oper_centr_freq_seg0_idx=42")
+ieee80211ac=1
+vht_capab=[MAX-MPDU-11454][SHORT-GI-80][RX-STBC-1][MAX-A-MPDU-LEN-EXP7]
+vht_oper_chwidth=1                    # 80 MHz channel width
+vht_oper_centr_freq_seg0_idx=42      # Centre à 5775 MHz (149+153+157+161)
+
 # WMM (Wi-Fi Multimedia) for QoS
 wmm_enabled=1
-# 802.11d (country regulatory)
-ieee80211d=1
-# WPA2-PSK Configuration
+
+# Security: WPA2-PSK (CCMP)
 auth_algs=1
 wpa=2
 wpa_key_mgmt=WPA-PSK
 rsn_pairwise=CCMP
 wpa_passphrase=${WIFI_PASSWORD}
+
 # Additional settings
 macaddr_acl=0
 ignore_broadcast_ssid=0
+
+# Logging
+logger_syslog=-1
+logger_syslog_level=2
+logger_stdout=-1
+logger_stdout_level=2
+
+#
+#
+# interface=${WIFI_IF}
+# driver=nl80211
+# ssid=${WIFI_SSID}
+# hw_mode=${WIFI_BAND}
+# channel=${WIFI_CHANNEL}
+# country_code=${WIFI_COUNTRY}  # "00" for world regulatory domain (no restrictions)
+#
+# # 802.11n settings (HT - High Throughput)
+# ieee80211n=1
+# ht_capab=[HT40+][SHORT-GI-20][SHORT-GI-40][DSSS_CCK-40]
+#
+# # 802.11ac settings (VHT - Very High Throughput) for 5GHz
+# ieee80211ac=1
+# vht_capab=[MAX-MPDU-11454][SHORT-GI-80][TX-STBC-2BY1][RX-STBC-1]
+# vht_oper_chwidth=1                   # 80 MHz channel width
+# vht_oper_centr_freq_seg0_idx=${VHT_CENTER_IDX}  # Dynamic calculation
+#
+# # WMM (Wi-Fi Multimedia) for QoS (required for stability)
+# wmm_enabled=1
+#
+# # Security: WPA2-PSK (CCMP)
+# auth_algs=1
+# wpa=2
+# wpa_key_mgmt=WPA-PSK
+# rsn_pairwise=CCMP
+# wpa_passphrase=${WIFI_PASSWORD}
+#
+# # Additional settings
+# macaddr_acl=0
+# ignore_broadcast_ssid=0
+#
+# # Logging configuration
+# logger_syslog=-1
+# logger_syslog_level=2
+# logger_stdout=-1
+# logger_stdout_level=2
 EOF
 
     # Start hostapd
@@ -1228,5 +1300,4 @@ esac
 
 log "===== Script execution completed ====="
 
-sleep 10
 exit 0

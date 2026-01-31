@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete WiFi Channels Guide - All Channels and Throughput Rates</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 20px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 40px;
+            font-size: 1.2em;
+        }
+        
+        h2 {
+            color: #2980b9;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-left: 5px solid #3498db;
+            padding-left: 15px;
+        }
+        
+        h3 {
+            color: #16a085;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+        
+        .info-box {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #3498db;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #f39c12;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.95em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        th {
+            padding: 15px 10px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        tbody tr:hover {
+            background: #e3f2fd;
+            transition: background 0.3s;
+        }
+        
+        .check {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .cross {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .warning {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        
+        .highlight {
+            background: #fff9c4;
+            font-weight: bold;
+        }
+        
+        .dfs-badge {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        
+        .formula {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .print-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .print-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+            
+            .print-btn {
+                display: none;
+            }
+            
+            h2 {
+                page-break-before: always;
+            }
+            
+            table {
+                page-break-inside: avoid;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            table {
+                font-size: 0.8em;
+            }
+            
+            th, td {
+                padding: 8px 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+    
+    <div class="container">
+        <h1>📡 Complete WiFi Channels Guide</h1>
+        <p class="subtitle">All channels, frequencies, throughput rates and Hostapd configuration</p>
+        
+        <div class="info-box">
+            <strong>📌 How to use this guide:</strong>
+            <ul style="margin-left: 20px; margin-top: 10px;">
+                <li>Click the button in the top right to save as PDF</li>
+                <li>All throughput rates are for 4×4 MIMO configuration (4 antennas) unless otherwise specified</li>
+                <li>DFS channels require radar detection (60s delay at startup)</li>
+                <li>Use Ctrl+F to search for a specific channel</li>
+            </ul>
+        </div>
+
+        <h2>📊 Calculation Formulas</h2>
+        
+        <h3>Frequency Calculation</h3>
+        <div class="formula">
+<strong>2.4 GHz Band:</strong> Frequency (MHz) = 2407 + (5 × channel_number)
+Example: Channel 6 → 2407 + (5 × 6) = 2437 MHz
+
+<strong>5 GHz Band:</strong> Frequency (MHz) = 5000 + (5 × channel_number)
+Example: Channel 100 → 5000 + (5 × 100) = 5500 MHz
+
+<strong>80 MHz Center Channel:</strong> Center_channel = First_channel_of_group + 6
+Example: Group 100-112 → 100 + 6 = 106
+        </div>
+
+        <h3>Power Calculation</h3>
+        <div class="formula">
+<strong>dBm to mW:</strong> mW = 10^(dBm/10)
+Example: 20 dBm → 10^(20/10) = 100 mW
+
+<strong>mW to dBm:</strong> dBm = 10 × log₁₀(mW)
+Example: 100 mW → 10 × log₁₀(100) = 20 dBm
+        </div>
+
+        <div class="legend">
+            <div class="legend-item"><span class="check">✅</span> Allowed</div>
+            <div class="legend-item"><span class="cross">❌</span> Forbidden</div>
+            <div class="legend-item"><span class="warning">⚠️</span> Restrictions</div>
+            <div class="legend-item"><span class="dfs-badge">DFS</span> Radar Detection Required</div>
+        </div>
+
+        <!-- ============= 2.4 GHz BAND ============= -->
+        <h2>📻 2.4 GHz Band (2.400 - 2.4835 GHz)</h2>
+        
+        <h3>Standards and Theoretical Throughput (4×4 MIMO)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Standard</th>
+                    <th>Width</th>
+                    <th>1 Stream</th>
+                    <th>2 Streams</th>
+                    <th>3 Streams</th>
+                    <th>4 Streams</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>802.11b</td>
+                    <td>20 MHz</td>
+                    <td>11 Mbps</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>802.11g</td>
+                    <td>20 MHz</td>
+                    <td>54 Mbps</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td><strong>802.11n (WiFi 4)</strong></td>
+                    <td>20 MHz</td>
+                    <td>72 Mbps</td>
+                    <td>144 Mbps</td>
+                    <td>217 Mbps</td>
+                    <td class="highlight">289 Mbps</td>
+                </tr>
+                <tr>
+                    <td><strong>802.11n (WiFi 4)</strong></td>
+                    <td>40 MHz</td>
+                    <td>150 Mbps</td>
+                    <td>300 Mbps</td>
+                    <td>450 Mbps</td>
+                    <td class="highlight">600 Mbps</td>
+                </tr>
+                <tr>
+                    <td><strong>802.11ax (WiFi 6)</strong></td>
+                    <td>20 MHz</td>
+                    <td>86 Mbps</td>
+                    <td>172 Mbps</td>
+                    <td>258 Mbps</td>
+                    <td class="highlight">344 Mbps</td>
+                </tr>
+                <tr>
+                    <td><strong>802.11ax (WiFi 6)</strong></td>
+                    <td>40 MHz</td>
+                    <td>172 Mbps</td>
+                    <td>344 Mbps</td>
+                    <td>516 Mbps</td>
+                    <td class="highlight">688 Mbps</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>All 2.4 GHz Channels</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Ch</th>
+                    <th>Freq (MHz)</th>
+                    <th>EU</th>
+                    <th>USA</th>
+                    <th>JP</th>
+                    <th>Max 20MHz (4×4)</th>
+                    <th>Max 40MHz (4×4)</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>1</strong></td>
+                    <td>2412</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td>289 / 344 Mbps</td>
+                    <td>600 / 688 Mbps</td>
+                    <td class="highlight">Non-overlapping</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>2417</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td>289 / 344 Mbps</td>
+                    <td>600 / 688 Mbps</td>
+                    <td>Overlaps 1-6</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>2422</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td>289 / 344 Mbps</td>
+                    <td>600 / 688 Mbps</td>
+                    <td>Overlaps 1-7</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>2427</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td>289 / 344 Mbps</td>
+                    <td>600 / 688 Mbps</td>
+                    <td>Overlaps 1-8</td>
+                </tr>
+                <tr>
+                    <td><strong>5</strong></td>
+                    <td>2432</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td>289 / 344 Mbps</td>
+                    <td>600 / 688 Mbps</td>
+                    <td class="highlight">Non-overlapping (EU)</td>
+                </tr>
+                <tr>
+                    <td><strong>6</strong></td>
+                    <td>2437</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td>289 / 344 Mbps</td>
+                    <td>600 / 688 Mbps</td>
+                    <td class="highlight">Non-overlapping</td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td>2442</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td>289 / 344 Mbps</td>
+                    <td>600 / 688 Mbps</td>
+                    <td>Overlaps 3-11</td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td>2447</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td>289 / 344 Mbps</td>
+                    <td>600 / 688 Mbps</td>
+                    <td>Overlaps 4-12</td>
+                </tr>
+                <tr>
+                    <td><strong>9</strong></td>
+                    <td>2452</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td>289 / 344 Mbps</td>
+                    <td>600 / 688 Mbps</td>
+                    <td class="highlight">Non-overlapping (EU)</td>
+                </tr>
+                <tr>
+                    <td>10</td>
+                    <td>2457</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td>289 / 344 Mbps</td>
+                    <td>600 / 688 Mbps</td>
+                    <td>Overlaps 6-13</td>
+                </tr>
+                <tr>
+                    <td><strong>11</strong></td>
+                    <td>2462</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td>289 / 344 Mbps</td>
+                    <td>600 / 688 Mbps</td>
+                    <td class="highlight">Non-overlapping</td>
+                </tr>
+                <tr>
+                    <td>12</td>
+                    <td>2467</td>
+                    <td class="check">✅</td>
+                    <td class="cross">❌</td>
+                    <td class="check">✅</td>
+                    <td>289 / 344 Mbps</td>
+                    <td>600 / 688 Mbps</td>
+                    <td>Forbidden USA</td>
+                </tr>
+                <tr>
+                    <td><strong>13</strong></td>
+                    <td>2472</td>
+                    <td class="check">✅</td>
+                    <td class="cross">❌</td>
+                    <td class="check">✅</td>
+                    <td>289 / 344 Mbps</td>
+                    <td>600 / 688 Mbps</td>
+                    <td class="highlight">Non-overlapping (EU)</td>
+                </tr>
+                <tr>
+                    <td>14</td>
+                    <td>2484</td>
+                    <td class="cross">❌</td>
+                    <td class="cross">❌</td>
+                    <td class="check">✅</td>
+                    <td>11 Mbps</td>
+                    <td>-</td>
+                    <td>Japan only, 802.11b</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="info-box">
+            <strong>💡 Maximum Power 2.4 GHz (EIRP):</strong><br>
+            Europe: 100 mW (20 dBm) | USA: 1000 mW (30 dBm) | Japan: 100 mW (20 dBm)
+        </div>
+
+        <!-- ============= 5 GHz BAND ============= -->
+        <h2>🚀 5 GHz Band (5.150 - 5.875 GHz)</h2>
+        
+        <h3>Standards and Theoretical Throughput (4×4 MIMO)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Standard</th>
+                    <th>Width</th>
+                    <th>1 Stream</th>
+                    <th>2 Streams</th>
+                    <th>3 Streams</th>
+                    <th>4 Streams</th>
+                    <th>8 Streams</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>802.11a</td>
+                    <td>20 MHz</td>
+                    <td>54 Mbps</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>802.11n (WiFi 4)</td>
+                    <td>20 MHz</td>
+                    <td>72 Mbps</td>
+                    <td>144 Mbps</td>
+                    <td>217 Mbps</td>
+                    <td>289 Mbps</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>802.11n (WiFi 4)</td>
+                    <td>40 MHz</td>
+                    <td>150 Mbps</td>
+                    <td>300 Mbps</td>
+                    <td>450 Mbps</td>
+                    <td>600 Mbps</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td><strong>802.11ac Wave 1 (WiFi 5)</strong></td>
+                    <td>20 MHz</td>
+                    <td>87 Mbps</td>
+                    <td>173 Mbps</td>
+                    <td>260 Mbps</td>
+                    <td>347 Mbps</td>
+                    <td>693 Mbps</td>
+                </tr>
+                <tr>
+                    <td><strong>802.11ac Wave 1 (WiFi 5)</strong></td>
+                    <td>40 MHz</td>
+                    <td>200 Mbps</td>
+                    <td>400 Mbps</td>
+                    <td>600 Mbps</td>
+                    <td>800 Mbps</td>
+                    <td>1.6 Gbps</td>
+                </tr>
+                <tr>
+                    <td><strong>802.11ac Wave 1 (WiFi 5)</strong></td>
+                    <td>80 MHz</td>
+                    <td>433 Mbps</td>
+                    <td>867 Mbps</td>
+                    <td>1.3 Gbps</td>
+                    <td class="highlight">1.73 Gbps</td>
+                    <td>3.47 Gbps</td>
+                </tr>
+                <tr>
+                    <td><strong>802.11ac Wave 2 (WiFi 5)</strong></td>
+                    <td>160 MHz</td>
+                    <td>867 Mbps</td>
+                    <td>1.73 Gbps</td>
+                    <td>2.6 Gbps</td>
+                    <td class="highlight">3.47 Gbps</td>
+                    <td>6.93 Gbps</td>
+                </tr>
+                <tr>
+                    <td><strong>802.11ax (WiFi 6)</strong></td>
+                    <td>20 MHz</td>
+                    <td>143 Mbps</td>
+                    <td>287 Mbps</td>
+                    <td>430 Mbps</td>
+                    <td class="highlight">574 Mbps</td>
+                    <td>1.15 Gbps</td>
+                </tr>
+                <tr>
+                    <td><strong>802.11ax (WiFi 6)</strong></td>
+                    <td>40 MHz</td>
+                    <td>287 Mbps</td>
+                    <td>574 Mbps</td>
+                    <td>860 Mbps</td>
+                    <td class="highlight">1.15 Gbps</td>
+                    <td>2.29 Gbps</td>
+                </tr>
+                <tr>
+                    <td><strong>802.11ax (WiFi 6)</strong></td>
+                    <td>80 MHz</td>
+                    <td>600 Mbps</td>
+                    <td>1.2 Gbps</td>
+                    <td>1.8 Gbps</td>
+                    <td class="highlight">2.4 Gbps</td>
+                    <td>4.8 Gbps</td>
+                </tr>
+                <tr>
+                    <td><strong>802.11ax (WiFi 6)</strong></td>
+                    <td>160 MHz</td>
+                    <td>1.2 Gbps</td>
+                    <td>2.4 Gbps</td>
+                    <td>3.6 Gbps</td>
+                    <td class="highlight">4.8 Gbps</td>
+                    <td>9.6 Gbps</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- UNII-1 -->
+        <h3>UNII-1 (5.150 - 5.250 GHz) - No DFS</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Ch</th>
+                    <th>Freq (MHz)</th>
+                    <th>EU</th>
+                    <th>USA</th>
+                    <th>DFS</th>
+                    <th>Max Power</th>
+                    <th>Max 20MHz</th>
+                    <th>Max 80MHz</th>
+                    <th>Max 160MHz</th>
+                    <th>Usage</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>34</td>
+                    <td>5170</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="cross">❌</td>
+                    <td>200 mW (23 dBm)</td>
+                    <td>574 Mbps</td>
+                    <td>2.4 Gbps</td>
+                    <td>-</td>
+                    <td>Indoor</td>
+                </tr>
+                <tr class="highlight">
+                    <td><strong>36</strong></td>
+                    <td>5180</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="cross">❌</td>
+                    <td>200 mW (23 dBm)</td>
+                    <td>574 Mbps</td>
+                    <td>2.4 Gbps</td>
+                    <td>4.8 Gbps</td>
+                    <td><strong>Very common</strong></td>
+                </tr>
+                <tr>
+                    <td>38</td>
+                    <td>5190</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="cross">❌</td>
+                    <td>200 mW (23 dBm)</td>
+                    <td>574 Mbps</td>
+                    <td>2.4 Gbps</td>
+                    <td>-</td>
+                    <td>Indoor</td>
+                </tr>
+                <tr class="highlight">
+                    <td><strong>40</strong></td>
+                    <td>5200</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="cross">❌</td>
+                    <td>200 mW (23 dBm)</td>
+                    <td>574 Mbps</td>
+                    <td>2.4 Gbps</td>
+                    <td>4.8 Gbps</td>
+                    <td><strong>Very common</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>42</strong></td>
+                    <td>5210</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="cross">❌</td>
+                    <td>200 mW (23 dBm)</td>
+                    <td>574 Mbps</td>
+                    <td>2.4 Gbps</td>
+                    <td>-</td>
+                    <td>80MHz center (36-48)</td>
+                </tr>
+                <tr class="highlight">
+                    <td><strong>44</strong></td>
+                    <td>5220</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="cross">❌</td>
+                    <td>200 mW (23 dBm)</td>
+                    <td>574 Mbps</td>
+                    <td>2.4 Gbps</td>
+                    <td>4.8 Gbps</td>
+                    <td><strong>Very common</strong></td>
+                </tr>
+                <tr>
+                    <td>46</td>
+                    <td>5230</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="cross">❌</td>
+                    <td>200 mW (23 dBm)</td>
+                    <td>574 Mbps</td>
+                    <td>2.4 Gbps</td>
+                    <td>-</td>
+                    <td>Indoor</td>
+                </tr>
+                <tr class="highlight">
+                    <td><strong>48</strong></td>
+                    <td>5240</td>
+                    <td class="check">✅</td>
+                    <td class="check">✅</td>
+                    <td class="cross">❌</td>
+                    <td>200 mW (23 dBm)</td>
+                    <td>574 Mbps</td>
+                    <td>2.4 Gbps</td>
+                    <td>4.8 Gbps</td>
+                    <td><strong>Very common</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- UNII-2A -->
