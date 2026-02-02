@@ -2,7 +2,7 @@
 ################################################################################
 # Author: Bruno DELNOZ
 # Email: bruno.delnoz@protonmail.com
-# Script name with full path: /root/mitm-clientmitm-capture.sh
+# Script name with full path: /mnt/data2_78g/Security/scripts/Projects_security/ManInTheMiddle/mitm-sourcesvr.sh
 # Target usage: MITM router setup for SOURCESVR traffic capture and analysis
 # Version: v3 – Date: 2025-01-28
 #
