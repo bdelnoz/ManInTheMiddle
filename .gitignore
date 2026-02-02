@@ -21,3 +21,18 @@ creation_log/
 # Section added automatically by mitm-iptv-sourcesvr.v3.sh
 
 # Section added automatically by mitm-sourcesvr.sh
+
+# ========================================
+# Template: shell
+# Added: 2026-02-03 00:25:06
+# ========================================
+logs/
+output/
+infos/
+result/
+results/
+backup/
+*.log
+*.zip
+*.tar.gz
+*.rar

@@ -416,11 +416,13 @@ country_code=${WIFI_COUNTRY}
 
 # 802.11n settings (HT - High Throughput)
 ieee80211n=1
-ht_capab=[HT40+][SHORT-GI-20][SHORT-GI-40][RX-STBC1][MAX-AMSDU-7935]
+# ht_capab=[HT40+][SHORT-GI-20][SHORT-GI-40][RX-STBC1][MAX-AMSDU-7935]
+ht_capab=[HT40+][SHORT-GI-20][SHORT-GI-40][MAX-AMSDU-7935]
 
 # 802.11ac settings (VHT - Very High Throughput) for 5GHz
 ieee80211ac=1
-vht_capab=[MAX-MPDU-11454][SHORT-GI-80][RX-STBC-1][MAX-A-MPDU-LEN-EXP7]
+# vht_capab=[MAX-MPDU-11454][SHORT-GI-80][RX-STBC-1][MAX-A-MPDU-LEN-EXP7]
+vht_capab=[MAX-MPDU-11454][SHORT-GI-80][MAX-A-MPDU-LEN-EXP7]
 vht_oper_chwidth=1                    # 80 MHz channel width
 vht_oper_centr_freq_seg0_idx=42      # Centre à 5775 MHz (149+153+157+161)
 
