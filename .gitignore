@@ -1,31 +1,8 @@
-
-# Section added automatically by mitm-iptv-capture.sh
-/logs
-
-# Section added automatically by mitm-iptv-capture-claude.sh
-/results
-/outputs
-/infos
-
-# Logs de création du repo - ajoutés automatiquement
-creation_log/
-
-# Section added automatically by mitm-iptv-sourcesvr.sh
-
-# Section added automatically by mitm-iptv-sourcesvr-lechat.2.0.sh
-
-# Section added automatically by mitm-iptv-sourcesvr-chatgpt.2.0.0.sh
-
-# Section added automatically by mitm-iptv-sourcesvr-claude.sh
-
-# Section added automatically by mitm-iptv-sourcesvr.v3.sh
-
-# Section added automatically by mitm-sourcesvr.sh
-
-# ========================================
-# Template: shell
-# Added: 2026-02-03 00:25:06
-# ========================================
+# Template : shell
+# Description : shell scriting compatihle with v110 and minimum
+# Maintainer : Bruno DELNOZ
+# Last update : 2025-10-25
+# Compatible with : shell command
 logs/
 output/
 infos/
@@ -36,3 +13,4 @@ backup/
 *.zip
 *.tar.gz
 *.rar
+*.html

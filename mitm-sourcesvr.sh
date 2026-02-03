@@ -65,7 +65,7 @@ WIFI_NETMASK="24"                    # Netmask for WiFi network
 WIFI_DHCP_START="192.168.51.10"      # DHCP pool start for WiFi
 WIFI_DHCP_END="192.168.51.50"        # DHCP pool end for WiFi
 WIFI_SSID="WLAN_MITM"                # SSID of the WiFi hotspot
-WIFI_PASSWORD="Mitm123456.2026"      # WPA2 password (min 8 chars)
+WIFI_PASSWORD="PASSWORD"      # WPA2 password (min 8 chars)
 WIFI_BAND="a"                        # WiFi band: a=5GHz, g=2.4GHz
 WIFI_CHANNEL="36"                    # WiFi channel (5GHz: 36,40,44,48 / 2.4GHz: 1-13)
 WIFI_COUNTRY="BE"                    # Country code (Belgium)
@@ -673,7 +673,7 @@ EOF
         log "[MITM] WiFi Hotspot Configuration:"
         log "[MITM]   Interface: ${WIFI_IF}"
         log "[MITM]   SSID: ${WIFI_SSID}"
-        log "[MITM]   Password: ${WIFI_PASSWORD}"
+        log "[MITM]   Password: WIFI_PASSWORD"
         log "[MITM]   Band: ${WIFI_BAND} ($([ "$WIFI_BAND" = "a" ] && echo "5GHz" || echo "2.4GHz"))"
         log "[MITM]   Channel: ${WIFI_CHANNEL}"
         log "[MITM]   Country: ${WIFI_COUNTRY}"
@@ -1165,11 +1165,11 @@ while [[ $# -gt 0 ]]; do
             ACTION="start"
             shift
             ;;
-        --start|-st)
+        --start|-sta)
             ACTION="start"
             shift
             ;;
-            --stop|-st)
+        --stop|-st)
             ACTION="stop"
             shift
             ;;
