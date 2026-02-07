@@ -1,0 +1,64 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [ 3 0 R ] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 946 >>
+stream
+BT
+/F1 10 Tf
+54 738 Td
+12 TL
+(# TODO Audit — ManInTheMiddle) Tj
+T*
+() Tj
+T*
+(## Court terme \(1–2 jours\)) Tj
+T*
+(- [ ] Corriger les références de script dans le README \(référencer `mitm-sourcesvr.sh`\).) Tj
+T*
+(- [ ] Corriger l’usage dans `client_traffic_capture.sh`.) Tj
+T*
+(- [ ] Revoir `.gitignore` pour éviter d’ignorer les HTML utiles.) Tj
+T*
+(- [ ] Ajouter section dépendances spécifiques à `fw.sh` dans la doc.) Tj
+T*
+() Tj
+T*
+(## Moyen terme \(1–2 semaines\)) Tj
+T*
+(- [ ] Restructurer le dépôt \(ex: `scripts/`, `docs/`\).) Tj
+T*
+(- [ ] Ajouter une licence \(MIT/Apache-2.0/etc.\).) Tj
+T*
+(- [ ] Ajouter des scripts de tests non destructifs \(lint shell, `bash -n`, check root\).) Tj
+T*
+() Tj
+T*
+(## Long terme) Tj
+T*
+(- [ ] Ajouter des scripts de simulation pour valider les règles iptables sans les appliquer.) Tj
+T*
+(- [ ] Créer des templates de configurations pour hostapd/dnsmasq et les documenter.) Tj
+T*
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000117 00000 n 
+0000000292 00000 n 
+trailer
+<< /Size 5 /Root 1 0 R >>
+startxref
+1289
+%%EOF
