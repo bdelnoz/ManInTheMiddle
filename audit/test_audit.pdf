@@ -1,0 +1,62 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [ 3 0 R ] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 693 >>
+stream
+BT
+/F1 10 Tf
+54 738 Td
+12 TL
+(# Test Audit — ManInTheMiddle) Tj
+T*
+() Tj
+T*
+(## Tests exécutés) Tj
+T*
+() Tj
+T*
+(### Syntaxe Bash \(non destructif\)) Tj
+T*
+(- `bash -n mitm-sourcesvr.sh`) Tj
+T*
+(- `bash -n fw.sh`) Tj
+T*
+(- `bash -n fw_diagnostic.sh`) Tj
+T*
+(- `bash -n client_traffic_capture.sh`) Tj
+T*
+() Tj
+T*
+(## Résultats) Tj
+T*
+(- Tous les tests de syntaxe Bash ont réussi \(exit code 0\).) Tj
+T*
+() Tj
+T*
+(## Tests non exécutés \(et pourquoi\)) Tj
+T*
+(- Les tests fonctionnels complets \(`--exec`/`--stop`\) n’ont pas été lancés car ils modifient iptables, interfaces réseau et services \(hostapd/dnsmasq\), ce qui est risqué hors environnement de lab contrôlé.) Tj
+T*
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000117 00000 n 
+0000000292 00000 n 
+trailer
+<< /Size 5 /Root 1 0 R >>
+startxref
+1036
+%%EOF

@@ -1,0 +1,104 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [ 3 0 R ] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 1983 >>
+stream
+BT
+/F1 10 Tf
+54 738 Td
+12 TL
+(# Correction Audit — ManInTheMiddle) Tj
+T*
+() Tj
+T*
+(## Objectif) Tj
+T*
+(Liste des corrections concrètes à appliquer pour aligner la documentation, améliorer la cohérence et réduire les risques d’usage.) Tj
+T*
+() Tj
+T*
+(## Corrections recommandées \(par priorité\)) Tj
+T*
+() Tj
+T*
+(### Critiques) Tj
+T*
+(1. **Aligner la documentation sur le script réel**) Tj
+T*
+(   - Mettre à jour le README pour référencer `mitm-sourcesvr.sh` au lieu de `mitm-clientmitm-capture.sh`.) Tj
+T*
+(   - Vérifier tous les exemples de commandes et les corriger en conséquence.) Tj
+T*
+() Tj
+T*
+(2. **Corriger l’usage dans `client_traffic_capture.sh`**) Tj
+T*
+(   - L’usage actuel mentionne `./capture-client.sh` \(inexistant\). Ajuster vers `./client_traffic_capture.sh`.) Tj
+T*
+() Tj
+T*
+(### Importantes) Tj
+T*
+(3. **Revoir `.gitignore`**) Tj
+T*
+(   - Le pattern `*.html` ignore des fichiers HTML utiles \(guides\). Retirer ou remplacer par un dossier spécifique d’artefacts générés.) Tj
+T*
+() Tj
+T*
+(4. **Clarifier les dépendances**) Tj
+T*
+(   - Regrouper dans le README une section « dépendances exactes » pour `fw.sh` \(curl, jq, dig\).) Tj
+T*
+() Tj
+T*
+(5. **Séparer scripts “run” et scripts “diagnostic”**) Tj
+T*
+(   - Ajouter un dossier `scripts/` et déplacer `fw.sh`, `fw_diagnostic.sh`, `client_traffic_capture.sh`, `mitm-sourcesvr.sh` \(si possible\). Mettre à jour les chemins dans la doc.) Tj
+T*
+() Tj
+T*
+(### Moyennes) Tj
+T*
+(6. **Ajouter un fichier LICENSE**) Tj
+T*
+(   - Le dépôt n’indique pas de licence. Ajouter la licence souhaitée pour clarifier l’usage.) Tj
+T*
+() Tj
+T*
+(7. **Ajouter une convention de logs**) Tj
+T*
+(   - Définir clairement où sont écrits les logs et comment les purger.) Tj
+T*
+() Tj
+T*
+(## Effets attendus) Tj
+T*
+(- Réduction des erreurs d’usage.) Tj
+T*
+(- Documentation cohérente avec les scripts réellement présents.) Tj
+T*
+(- Meilleure maintenabilité pour l’équipe.) Tj
+T*
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000117 00000 n 
+0000000292 00000 n 
+trailer
+<< /Size 5 /Root 1 0 R >>
+startxref
+2327
+%%EOF

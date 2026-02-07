@@ -1,0 +1,312 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [ 3 0 R 4 0 R 5 0 R ] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 7 0 R >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 8 0 R >>
+endobj
+6 0 obj
+<< /Length 2591 >>
+stream
+BT
+/F1 10 Tf
+54 738 Td
+12 TL
+(# Audit du dépôt ManInTheMiddle) Tj
+T*
+() Tj
+T*
+(Date: 2025-02-XX) Tj
+T*
+() Tj
+T*
+(## 1\) Inventaire complet des fichiers \(classés par domaines/fonctions\)) Tj
+T*
+() Tj
+T*
+(### Scripts \(shell\)) Tj
+T*
+(- `client_traffic_capture.sh`) Tj
+T*
+(- `fw.sh`) Tj
+T*
+(- `fw_diagnostic.sh`) Tj
+T*
+(- `mitm-sourcesvr.sh`) Tj
+T*
+() Tj
+T*
+(### Documentation) Tj
+T*
+(- `README.md`) Tj
+T*
+() Tj
+T*
+(### Frontend / statique \(HTML\)) Tj
+T*
+(- `linkedin_mitm_post.html`) Tj
+T*
+(- `wifi-channels-guide.html`) Tj
+T*
+(- `wifi-channels-guide-en.html`) Tj
+T*
+() Tj
+T*
+(### Configuration) Tj
+T*
+(- `.gitignore`) Tj
+T*
+() Tj
+T*
+(### Infra) Tj
+T*
+(- \(aucun\)) Tj
+T*
+() Tj
+T*
+(### Backend) Tj
+T*
+(- \(aucun\)) Tj
+T*
+() Tj
+T*
+(### Data) Tj
+T*
+(- \(aucun\)) Tj
+T*
+() Tj
+T*
+(### Tests) Tj
+T*
+(- \(aucun\)) Tj
+T*
+() Tj
+T*
+(## 2\) Fichiers clés par domaine + usage) Tj
+T*
+() Tj
+T*
+(### Scripts \(shell\)) Tj
+T*
+(- `mitm-sourcesvr.sh`: script principal qui configure le routeur MITM \(iptables, dnsmasq, hostapd\), sauvegarde/restaure l’état système, et gère les interfaces LAN/WIFI/WAN. C’est le point d’entrée principal opérationnel. Il gère aussi les logs, les fichiers temporaires et les sauvegardes d’état.) Tj
+T*
+(- `fw.sh`: script “firewall strict” pour iptables avec logging, règles de sécurité restrictives, et support pour hotspot WiFi MITM. Il met en place des politiques DROP et des exceptions \(DNS, HTTPS, NTP, DHCP, etc.\).) Tj
+T*
+(- `fw_diagnostic.sh`: script de diagnostic pour vérifier les règles iptables, l’état des interfaces, la présence de dnsmasq/hostapd et des logs, utile pour la résolution d’incidents.) Tj
+T*
+(- `client_traffic_capture.sh`: script de capture rapide du trafic d’un client, avec analyse basique \(protocoles, ports, IPs\) après capture tcpdump.) Tj
+T*
+() Tj
+T*
+(### Documentation) Tj
+T*
+(- `README.md`: documentation très complète orientée Kali Linux, avec prérequis, explications techniques, étapes d’usage \(start/stop\), règles iptables, et guides de dépannage.) Tj
+T*
+() Tj
+T*
+(### Frontend / statique \(HTML\)) Tj
+T*
+(- `wifi-channels-guide.html`: guide visuel complet \(FR\) sur les canaux WiFi.) Tj
+T*
+(- `wifi-channels-guide-en.html`: guide visuel complet \(EN\) sur les canaux WiFi.) Tj
+T*
+(- `linkedin_mitm_post.html`: page de présentation \(style “post”\) sur le projet.) Tj
+T*
+() Tj
+T*
+(### Configuration) Tj
+T*
+(- `.gitignore`: ignore des artefacts de logs, outputs, archives, etc.) Tj
+T*
+() Tj
+T*
+(## 3\) Structure globale du projet) Tj
+T*
+() Tj
+T*
+(### Points d’entrée) Tj
+T*
+ET
+endstream
+endobj
+7 0 obj
+<< /Length 3536 >>
+stream
+BT
+/F1 10 Tf
+54 738 Td
+12 TL
+(- Principal: `mitm-sourcesvr.sh` \(setup/restore MITM, DHCP, DNS, iptables\).) Tj
+T*
+(- Compléments: `fw.sh` \(firewall\), `fw_diagnostic.sh` \(diagnostic\), `client_traffic_capture.sh` \(capture ponctuelle\).) Tj
+T*
+() Tj
+T*
+(### Modules principaux \(logiques\)) Tj
+T*
+(- **Routage + NAT + DNS**: géré par iptables dans `mitm-sourcesvr.sh` et renforcé par `fw.sh`.) Tj
+T*
+(- **DHCP**: géré via `dnsmasq` \(config générée à la volée\).) Tj
+T*
+(- **Hotspot WiFi**: géré via `hostapd` \(config générée à la volée\).) Tj
+T*
+(- **Logging & sauvegarde d’état**: création de logs et backups pour restauration.) Tj
+T*
+() Tj
+T*
+(### Flux de données \(haut niveau\)) Tj
+T*
+(1. L’opérateur lance `mitm-sourcesvr.sh --exec` pour initialiser le MITM.) Tj
+T*
+(2. Le script configure les interfaces \(LAN/WIFI\), iptables \(NAT + FORWARD\), et lance dnsmasq/hostapd.) Tj
+T*
+(3. Le trafic des clients est routé vers le WAN, avec redirection DNS transparente.) Tj
+T*
+(4. Les logs et captures \(manuelles\) sont stockés localement dans `logs/` et `results/`.) Tj
+T*
+(5. Sur arrêt \(`--stop`\), le script restaure l’état système.) Tj
+T*
+() Tj
+T*
+(### Dépendances majeures) Tj
+T*
+(- Système/réseau: `iptables`, `iproute2`, `sysctl`, `dnsmasq`, `hostapd`, `iw`, `rfkill`, `tshark` \(recommandé\), `tcpdump`.) Tj
+T*
+(- Utilitaires: `curl`, `jq`, `dig` \(pour `fw.sh`\), `systemd` pour logging.) Tj
+T*
+() Tj
+T*
+(## 4\) API & endpoints) Tj
+T*
+(- Aucune API web \(FastAPI/Flask/Express/etc.\) détectée.) Tj
+T*
+() Tj
+T*
+(## 5\) Scripts .sh \(détails d’usage\)) Tj
+T*
+() Tj
+T*
+(### `mitm-sourcesvr.sh`) Tj
+T*
+(- Usage principal: `sudo ./mitm-sourcesvr.sh --exec` \(ou `--start`\), `sudo ./mitm-sourcesvr.sh --stop`.) Tj
+T*
+(- Rôle: configuration complète du MITM \(iptables, DNS, DHCP, WiFi hotspot\).) Tj
+T*
+(- Génère: configs temporaires `dnsmasq`/`hostapd`, backups d’état, logs.) Tj
+T*
+() Tj
+T*
+(### `fw.sh`) Tj
+T*
+(- Usage: `sudo ./fw.sh`.) Tj
+T*
+(- Rôle: firewall strict avec journalisation, gestion DNS/HTTPS/NTP/SSH, règles spécifiques pour hotspot WiFi MITM.) Tj
+T*
+(- Dépendances: iptables, curl, jq, dig.) Tj
+T*
+() Tj
+T*
+(### `fw_diagnostic.sh`) Tj
+T*
+(- Usage: `sudo ./fw_diagnostic.sh <IP_IPTV>`.) Tj
+T*
+(- Rôle: diagnostic complet des politiques iptables, NAT, interfaces, services et logs.) Tj
+T*
+() Tj
+T*
+(### `client_traffic_capture.sh`) Tj
+T*
+(- Usage: `sudo ./client_traffic_capture.sh <IP_CLIENT>`.) Tj
+T*
+(- Rôle: capture tcpdump 30s + analyse rapide du trafic \(protocoles/ports/IP\).) Tj
+T*
+() Tj
+T*
+(## 6\) Scripts .py) Tj
+T*
+(- Aucun fichier `.py` détecté.) Tj
+T*
+() Tj
+T*
+(## 7\) Duplications, conflits potentiels, obsolescence) Tj
+T*
+(- **README vs script réel**: le README fait référence à `mitm-clientmitm-capture.sh` alors que le dépôt contient `mitm-sourcesvr.sh`. Cela peut causer de la confusion.) Tj
+T*
+(- **Nom d’usage incohérent**: `client_traffic_capture.sh` mentionne `./capture-client.sh` dans l’usage, ce qui ne correspond pas au nom du fichier.) Tj
+T*
+(- **.gitignore**: le pattern `*.html` ignore potentiellement des pages statiques utiles qui sont déjà versionnées dans le dépôt.) Tj
+T*
+(- **Redondance**: deux guides WiFi \(FR/EN\) ont un contenu similaire \(acceptable si ciblage multi-langues\).) Tj
+T*
+() Tj
+T*
+(## 8\) Tableau synthétique des fichiers) Tj
+T*
+() Tj
+T*
+(| Fichier | Usage |) Tj
+T*
+(|---|---|) Tj
+T*
+(| `README.md` | Documentation complète d’installation, usage, et dépannage MITM. |) Tj
+T*
+ET
+endstream
+endobj
+8 0 obj
+<< /Length 757 >>
+stream
+BT
+/F1 10 Tf
+54 738 Td
+12 TL
+(| `mitm-sourcesvr.sh` | Script principal: configure NAT/DHCP/DNS/hotspot pour MITM. |) Tj
+T*
+(| `fw.sh` | Script firewall strict avec logging et exceptions contrôlées. |) Tj
+T*
+(| `fw_diagnostic.sh` | Diagnostic iptables/services/réseau. |) Tj
+T*
+(| `client_traffic_capture.sh` | Capture courte du trafic client + analyse rapide. |) Tj
+T*
+(| `linkedin_mitm_post.html` | Page statique de présentation du projet. |) Tj
+T*
+(| `wifi-channels-guide.html` | Guide FR des canaux WiFi. |) Tj
+T*
+(| `wifi-channels-guide-en.html` | Guide EN des canaux WiFi. |) Tj
+T*
+(| `.gitignore` | Ignore logs/outputs/archives/fichiers générés. |) Tj
+T*
+() Tj
+T*
+(## 9\) Tableau des endpoints) Tj
+T*
+(- N/A \(aucune API détectée\).) Tj
+T*
+ET
+endstream
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000129 00000 n 
+0000000304 00000 n 
+0000000479 00000 n 
+0000000654 00000 n 
+0000003297 00000 n 
+0000006885 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R >>
+startxref
+7693
+%%EOF
