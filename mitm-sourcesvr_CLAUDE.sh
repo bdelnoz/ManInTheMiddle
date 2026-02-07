@@ -4,56 +4,48 @@
 # Email: bruno.delnoz@protonmail.com
 # Script name with full path: /mnt/data2_78g/Security/scripts/Projects_security/ManInTheMiddle/mitm-sourcesvr.sh
 # Target usage: MITM router setup for SOURCESVR traffic capture and analysis
-# Version: v3 – Date: 2025-01-28
-#
-# TODO
-# - chage clientmitm  clientmitm
-# - adapt iptables sections to be more restricive
-# - adapt rea   dme to set export MITM_AP_PASSWORD= in .bashrc
-#
+# Version: v3.2 – Date: 2025-02-03
 #
 # Changelog:
-# v3.0 - 2025-01-28 - MAJOR RELEASE: Separate Subnets & Performance Optimization
-# Fixed critical dnsmasq startup issue (wlan1 needs IP before dnsmasq starts)
-# Separated Ethernet and WiFi on different subnets to avoid IP conflicts
-# - Ethernet (eth1): 192.168.50.0/24 (DHCP: .10-.50)
-# - WiFi (wlan1): 192.168.51.0/24 (DHCP: .10-.50)
-# Added new WiFi-specific configuration variables (WIFI_IP, WIFI_DHCP_START/END)
-# Optimized WiFi performance with 802.11n/ac enhancements
-# - HT40 (40MHz channel width) for 2.4GHz: ~300 Mbps
-# - VHT80 (80MHz channel width) for 5GHz: ~867 Mbps
-# - Enabled SHORT-GI (Short Guard Interval) for better throughput
-# Enhanced hostapd configuration with advanced capabilities
-# Added cleanup_temp_files() function for proper temporary file management
-# Fixed temporary files not being removed on --stop
-# Improved restore_system_state() with automatic cleanup
-# Added --start alias for --exec command
-# Both Ethernet and WiFi devices now work independently
-# Complete error handling for WiFi hotspot failures with automatic fallback
-# v2.5 - 2025-01-27 - MAJOR RELEASE: Complete WiFi Hotspot Integration
-# v2.1 - 2025-01-27 - Minor corrections to dnsmasq & dhcp configuration
-# v1.7-v1.0 - Earlier versions (see --changelog for full history)
+# v3.2 - 2025-02-03 - DUAL MODE: Router (default) + Capture
+# Added --router mode (default, permanent, minimal logs, no backup)
+# Added --capture mode (verbose logs, system backup, analysis)
+# Configuration file stored in script directory: ./mitm-router.conf
+# Added systemd service installation (--install-service)
+# Added --uninstall-service to remove systemd service
+# Mode auto-detection: default is --router if not specified
+# Logs optimized per mode (minimal for router, verbose for capture)
+# Added persistent configuration loading from ./mitm-router.conf
+# v3.1 - 2025-02-03 - BUG FIXES & IMPROVEMENTS
+# Fixed critical duplicate --stop argument parsing
+# Fixed --start/-st and --stop/-st alias conflict (now -sta and -sto)
+# Added post-startup healthcheck verification (verify_mitm_status)
+# Added show_traffic_stats() function for monitoring
+# Added export_config_json() for configuration export
+# Added auto-detection of network interfaces
+# Improved error handling for hostapd/dnsmasq failures
+# Added input validation for WiFi password length
+# Cleaned up obsolete TODOs
 ################################################################################
 set -e
 
 ################################################################################
 # DEFAULT CONFIGURATION VARIABLES
 ################################################################################
+# Operating mode (router or capture)
+MODE="router"  # Default mode
+
 # Network Interfaces
 LAN_IF="eth1"                        # Ethernet interface for SOURCESVR device
 WAN_IF="wlan0"                       # Interface connected to Internet
 WIFI_IF="wlan1"                      # WiFi interface for hotspot MITM
-# WAN_IF="wlan0"    # MediaTek en mode client (connectée à Guest-Orange) ✓
-# WIFI_IF="wlan1"   # TP-Link pour hotspot MITM ✓
-# LAN_IF="eth1"     # Ethernet ✓
 
 # LAN Configuration
 LAN_IP="192.168.50.1"                # IP address for LAN gateway (Ethernet)
 LAN_NETMASK="24"                     # Netmask for LAN network
-LAN_DHCP_START="192.168.50.10"     # DHCP pool start address (Ethernet)
-LAN_DHCP_END="192.168.50.50"       # DHCP pool end address (Ethernet)
+DHCP_RANGE_START="192.168.50.10"     # DHCP pool start address (Ethernet)
+DHCP_RANGE_END="192.168.50.50"       # DHCP pool end address (Ethernet)
 DHCP_LEASE_TIME="12h"                # DHCP lease duration
-
 DNS1_IP="1.1.1.1"
 DNS2_IP="1.0.0.1"
 
@@ -69,40 +61,162 @@ WIFI_BAND="a"                        # WiFi band: a=5GHz, g=2.4GHz
 WIFI_CHANNEL="36"                    # WiFi channel (5GHz: 36,40,44,48 / 2.4GHz: 1-13)
 WIFI_COUNTRY="BE"                    # Country code (Belgium)
 
-
 ################################################################################
 # PATHS AND FILES
 ################################################################################
 SCRIPT_NAME=$(basename "$0")
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-VERSION="v3.0"
+VERSION="v3.2"
+
+# Configuration file (persistent, stored in script directory)
+CONFIG_FILE="${SCRIPT_DIR}/mitm-router.conf"
 
 # Create required directories
 LOGS_DIR="${SCRIPT_DIR}/logs"
 RESULTS_DIR="${SCRIPT_DIR}/results"
 INFOS_DIR="${SCRIPT_DIR}/infos"
-mkdir -p "$LOGS_DIR" "$RESULTS_DIR" "$INFOS_DIR"
+RUNS_DIR="${SCRIPT_DIR}/runs"
+mkdir -p "$LOGS_DIR" "$RESULTS_DIR" "$INFOS_DIR" "$RUNS_DIR"
 
-# Log file
+# Log file (mode-dependent)
 LOGFILE="${LOGS_DIR}/log.${SCRIPT_NAME}.${TIMESTAMP}.${VERSION}.log"
 
-# State backup file
+# State backup file (only in capture mode)
 STATE_BACKUP="${RESULTS_DIR}/system-state-backup.${TIMESTAMP}.tar.gz"
 
-# Temporary files
-DNSMASQ_CONF="/tmp/dnsmasq-sourcesvr-${TIMESTAMP}.conf"
-DNSMASQ_PID="/tmp/dnsmasq-sourcesvr-${TIMESTAMP}.pid"
-HOSTAPD_CONF="/tmp/hostapd-mitm-${TIMESTAMP}.conf"
-HOSTAPD_PID="/tmp/hostapd-mitm-${TIMESTAMP}.pid"
-STATE_FILE="/tmp/mitm-state-${TIMESTAMP}.txt"
+# Runtime files - ALWAYS in ./runs/ directory (never in /tmp)
+if [ "$MODE" = "router" ]; then
+    DNSMASQ_CONF="${RUNS_DIR}/dnsmasq-router.conf"
+    DNSMASQ_PID="${RUNS_DIR}/dnsmasq-router.pid"
+    HOSTAPD_CONF="${RUNS_DIR}/hostapd-router.conf"
+    HOSTAPD_PID="${RUNS_DIR}/hostapd-router.pid"
+    STATE_FILE="${RUNS_DIR}/mitm-router-state.txt"
+else
+    DNSMASQ_CONF="${RUNS_DIR}/dnsmasq-capture-${TIMESTAMP}.conf"
+    DNSMASQ_PID="${RUNS_DIR}/dnsmasq-capture-${TIMESTAMP}.pid"
+    HOSTAPD_CONF="${RUNS_DIR}/hostapd-capture-${TIMESTAMP}.conf"
+    HOSTAPD_PID="${RUNS_DIR}/hostapd-capture-${TIMESTAMP}.pid"
+    STATE_FILE="${RUNS_DIR}/mitm-capture-state-${TIMESTAMP}.txt"
+fi
 
 ################################################################################
-# LOGGING FUNCTION
+# LOGGING FUNCTION (MODE-AWARE)
 ################################################################################
 log() {
     local message="[$(date '+%Y-%m-%d %H:%M:%S')] $1"
-    echo "$message" | tee -a "$LOGFILE"
+
+    if [ "$MODE" = "capture" ]; then
+        # Verbose logging for capture mode
+        echo "$message" | tee -a "$LOGFILE"
+    else
+        # Minimal logging for router mode (only errors and important info)
+        if [[ "$1" == *"Error"* ]] || [[ "$1" == *"ERROR"* ]] || [[ "$1" == *"✗"* ]]; then
+            echo "$message" | tee -a "$LOGFILE"
+        else
+            echo "$message" >> "$LOGFILE"
+        fi
+    fi
+}
+
+################################################################################
+# LOAD CONFIGURATION FROM FILE
+################################################################################
+load_config() {
+    if [ -f "$CONFIG_FILE" ]; then
+        log "[Config] Loading configuration from $CONFIG_FILE"
+        source "$CONFIG_FILE"
+        log "[Config] Configuration loaded successfully"
+    else
+        log "[Config] No configuration file found, using defaults"
+    fi
+}
+
+################################################################################
+# SAVE CONFIGURATION TO FILE
+################################################################################
+save_config() {
+    log "[Config] Saving configuration to $CONFIG_FILE"
+    cat > "$CONFIG_FILE" <<EOF
+# MITM Router Configuration
+# Generated: $(date)
+# Version: ${VERSION}
+
+# Network Interfaces
+LAN_IF="$LAN_IF"
+WAN_IF="$WAN_IF"
+WIFI_IF="$WIFI_IF"
+
+# LAN Configuration
+LAN_IP="$LAN_IP"
+LAN_NETMASK="$LAN_NETMASK"
+DHCP_RANGE_START="$DHCP_RANGE_START"
+DHCP_RANGE_END="$DHCP_RANGE_END"
+DHCP_LEASE_TIME="$DHCP_LEASE_TIME"
+DNS1_IP="$DNS1_IP"
+DNS2_IP="$DNS2_IP"
+
+# WiFi Hotspot Configuration
+WIFI_ENABLED="$WIFI_ENABLED"
+WIFI_IP="$WIFI_IP"
+WIFI_NETMASK="$WIFI_NETMASK"
+WIFI_DHCP_START="$WIFI_DHCP_START"
+WIFI_DHCP_END="$WIFI_DHCP_END"
+WIFI_SSID="$WIFI_SSID"
+WIFI_PASSWORD="$WIFI_PASSWORD"
+WIFI_BAND="$WIFI_BAND"
+WIFI_CHANNEL="$WIFI_CHANNEL"
+WIFI_COUNTRY="$WIFI_COUNTRY"
+EOF
+    log "[Config] Configuration saved"
+}
+
+################################################################################
+# SYSTEMD SERVICE INSTALLATION
+################################################################################
+install_systemd_service() {
+    log "[Service] Installing systemd service"
+
+    local service_file="/etc/systemd/system/mitm-router.service"
+
+    cat > "$service_file" <<EOF
+[Unit]
+Description=MITM Router Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=${SCRIPT_DIR}/${SCRIPT_NAME} --router --exec
+ExecStop=${SCRIPT_DIR}/${SCRIPT_NAME} --stop
+TimeoutStartSec=0
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    systemctl daemon-reload
+    log "[Service] Systemd service installed at $service_file"
+    log "[Service] Enable with: sudo systemctl enable mitm-router"
+    log "[Service] Start with: sudo systemctl start mitm-router"
+    log "[Service] Status with: sudo systemctl status mitm-router"
+}
+
+################################################################################
+# SYSTEMD SERVICE UNINSTALLATION
+################################################################################
+uninstall_systemd_service() {
+    log "[Service] Uninstalling systemd service"
+
+    systemctl stop mitm-router 2>/dev/null || true
+    systemctl disable mitm-router 2>/dev/null || true
+    rm -f /etc/systemd/system/mitm-router.service
+    systemctl daemon-reload
+
+    log "[Service] Systemd service uninstalled"
 }
 
 ################################################################################
@@ -111,7 +225,7 @@ log() {
 manage_gitignore() {
     log "[GitIgnore] Managing .gitignore file"
     local gitignore_file="${SCRIPT_DIR}/.gitignore"
-    local entries_to_add=("/logs" "/results" "/outputs" "/infos")
+    local entries_to_add=("/logs" "/results" "/outputs" "/infos" "/runs")
     local added_count=0
 
     # Create .gitignore if it doesn't exist
@@ -143,9 +257,51 @@ manage_gitignore() {
 }
 
 ################################################################################
-# BACKUP CURRENT SYSTEM STATE
+# AUTO-DETECT NETWORK INTERFACES
+################################################################################
+detect_interfaces() {
+    log "[Detect] Auto-detecting network interfaces..."
+
+    # Detect WAN (interface with default route)
+    local wan_auto=$(ip route | grep default | awk '{print $5}' | head -n1)
+
+    # Detect LAN (first Ethernet interface that's not WAN)
+    local lan_auto=$(ip link | grep -E '^[0-9]+: eth' | awk -F': ' '{print $2}' | grep -v "$wan_auto" | head -n1)
+
+    # Detect WiFi AP-capable (first wireless interface that's not WAN)
+    local wifi_auto=$(iw dev | grep Interface | awk '{print $2}' | grep -v "$wan_auto" | head -n1)
+
+    log "[Detect] Auto-detected interfaces:"
+    log "[Detect]   WAN: ${wan_auto:-not found}"
+    log "[Detect]   LAN: ${lan_auto:-not found}"
+    log "[Detect]   WIFI: ${wifi_auto:-not found}"
+
+    # Use auto-detected values if not already set by user
+    if [ -z "$WAN_IF_OVERRIDE" ] && [ -n "$wan_auto" ]; then
+        WAN_IF="$wan_auto"
+        log "[Detect] Using auto-detected WAN interface: $WAN_IF"
+    fi
+
+    if [ -z "$LAN_IF_OVERRIDE" ] && [ -n "$lan_auto" ]; then
+        LAN_IF="$lan_auto"
+        log "[Detect] Using auto-detected LAN interface: $LAN_IF"
+    fi
+
+    if [ -z "$WIFI_IF_OVERRIDE" ] && [ -n "$wifi_auto" ]; then
+        WIFI_IF="$wifi_auto"
+        log "[Detect] Using auto-detected WIFI interface: $WIFI_IF"
+    fi
+}
+
+################################################################################
+# BACKUP CURRENT SYSTEM STATE (CAPTURE MODE ONLY)
 ################################################################################
 backup_system_state() {
+    if [ "$MODE" != "capture" ]; then
+        log "[Backup] Skipped (router mode - no backup needed)"
+        return 0
+    fi
+
     log "[Backup] (1/9) Saving current system state"
 
     # Create temporary directory for state files
@@ -307,6 +463,7 @@ restore_system_state() {
 
     log "[Restore] System successfully restored to initial state"
 }
+
 ################################################################################
 # MANUAL RESTORE (FALLBACK)
 ################################################################################
@@ -335,6 +492,18 @@ manual_restore() {
     # Re-enable IPv6
     sysctl -w net.ipv6.conf.all.disable_ipv6=0 >/dev/null
     sysctl -w net.ipv6.conf.default.disable_ipv6=0 >/dev/null
+    sysctl -w net.ipv6.conf.lo.disable_ipv6=0 >/dev/null
+
+    # Re-enable IPv6 on specific interfaces
+    sysctl -w net.ipv6.conf."${LAN_IF}".disable_ipv6=0 >/dev/null 2>&1 || true
+    sysctl -w net.ipv6.conf."${WAN_IF}".disable_ipv6=0 >/dev/null 2>&1 || true
+    sysctl -w net.ipv6.conf."${WIFI_IF}".disable_ipv6=0 >/dev/null 2>&1 || true
+
+    # Reset IPv6 iptables
+    ip6tables -P INPUT ACCEPT 2>/dev/null || true
+    ip6tables -P OUTPUT ACCEPT 2>/dev/null || true
+    ip6tables -P FORWARD ACCEPT 2>/dev/null || true
+    ip6tables -F 2>/dev/null || true
 
     # Flush LAN interface
     ip addr flush dev "$LAN_IF" 2>/dev/null || true
@@ -346,6 +515,7 @@ manual_restore() {
 
     log "[Manual Restore] Manual restore completed"
 }
+
 ################################################################################
 # CLEANUP TEMPORARY FILES
 ################################################################################
@@ -360,6 +530,7 @@ cleanup_temp_files() {
 
     log "[Cleanup] Done"
 }
+
 ################################################################################
 # CONFIGURE WIFI HOTSPOT
 ################################################################################
@@ -385,7 +556,6 @@ configure_wifi_hotspot() {
     log "[WiFi] (3/4) Creating hostapd configuration"
     cat > "$HOSTAPD_CONF" <<EOF
 # hostapd configuration for MITM WiFi hotspot (MAX THROUGHPUT - ${WIFI_BAND} ${WIFI_CHANNEL}MHz)
-# hostapd configuration for MITM WiFi hotspot (MAX THROUGHPUT - 5GHz 149 @ 80MHz)
 interface=${WIFI_IF}
 driver=nl80211
 ssid=${WIFI_SSID}
@@ -393,27 +563,31 @@ hw_mode=${WIFI_BAND}
 channel=${WIFI_CHANNEL}
 country_code=${WIFI_COUNTRY}
 
-ctrl_interface=/var/run/hostapd
-ctrl_interface_group=0
-
+# 802.11n settings (HT - High Throughput)
 ieee80211n=1
-ht_capab=[HT40+][LDPC][SHORT-GI-20][SHORT-GI-40][DSSS_CCK-40][MAX-AMSDU-7935]
+ht_capab=[HT40+][SHORT-GI-20][SHORT-GI-40][MAX-AMSDU-7935]
 
+# 802.11ac settings (VHT - Very High Throughput) for 5GHz
 ieee80211ac=1
-vht_capab=[RXLDPC][SHORT-GI-80][TX-STBC-2BY1][SU-BEAMFORMEE][MU-BEAMFORMEE][MAX-MPDU-11454][MAX-A-MPDU-LEN-EXP7]
+vht_capab=[MAX-MPDU-11454][SHORT-GI-80][MAX-A-MPDU-LEN-EXP7]
 vht_oper_chwidth=1
 vht_oper_centr_freq_seg0_idx=42
 
+# WMM (Wi-Fi Multimedia) for QoS
 wmm_enabled=1
+
+# Security: WPA2-PSK (CCMP)
 auth_algs=1
 wpa=2
 wpa_key_mgmt=WPA-PSK
 rsn_pairwise=CCMP
 wpa_passphrase=${WIFI_PASSWORD}
 
+# Additional settings
 macaddr_acl=0
 ignore_broadcast_ssid=0
 
+# Logging
 logger_syslog=-1
 logger_syslog_level=2
 logger_stdout=-1
@@ -431,14 +605,170 @@ EOF
         return 1
     fi
 }
+
+################################################################################
+# VERIFY MITM STATUS (POST-STARTUP HEALTHCHECK)
+################################################################################
+verify_mitm_status() {
+    log "[Verify] Running post-startup healthchecks..."
+
+    local errors=0
+
+    # Check 1: IP forwarding
+    if [ "$(sysctl -n net.ipv4.ip_forward)" != "1" ]; then
+        log "[Verify] ✗ IP forwarding not enabled"
+        ((errors++))
+    else
+        log "[Verify] ✓ IP forwarding enabled"
+    fi
+
+    # Check 2: NAT rule exists
+    if ! iptables -t nat -S | grep -q MASQUERADE; then
+        log "[Verify] ✗ NAT MASQUERADE rule missing"
+        ((errors++))
+    else
+        log "[Verify] ✓ NAT MASQUERADE rule present"
+    fi
+
+    # Check 3: dnsmasq running
+    if [ ! -f "$DNSMASQ_PID" ] || ! kill -0 "$(cat "$DNSMASQ_PID")" 2>/dev/null; then
+        log "[Verify] ✗ dnsmasq not running"
+        ((errors++))
+    else
+        log "[Verify] ✓ dnsmasq running (PID: $(cat "$DNSMASQ_PID"))"
+    fi
+
+    # Check 4: hostapd running (if WiFi enabled)
+    if [ "$WIFI_ENABLED" = "true" ]; then
+        if [ ! -f "$HOSTAPD_PID" ] || ! kill -0 "$(cat "$HOSTAPD_PID")" 2>/dev/null; then
+            log "[Verify] ✗ hostapd not running"
+            ((errors++))
+        else
+            log "[Verify] ✓ hostapd running (PID: $(cat "$HOSTAPD_PID"))"
+        fi
+    fi
+
+    # Check 5: LAN interface has IP
+    if ! ip addr show dev "$LAN_IF" | grep -q "$LAN_IP"; then
+        log "[Verify] ✗ LAN interface $LAN_IF missing IP $LAN_IP"
+        ((errors++))
+    else
+        log "[Verify] ✓ LAN interface configured"
+    fi
+
+    # Check 6: WiFi interface has IP (if enabled)
+    if [ "$WIFI_ENABLED" = "true" ]; then
+        if ! ip addr show dev "$WIFI_IF" | grep -q "$WIFI_IP"; then
+            log "[Verify] ✗ WiFi interface $WIFI_IF missing IP $WIFI_IP"
+            ((errors++))
+        else
+            log "[Verify] ✓ WiFi interface configured"
+        fi
+    fi
+
+    # Check 7: IPv6 is disabled
+    if [ "$(sysctl -n net.ipv6.conf.all.disable_ipv6)" != "1" ]; then
+        log "[Verify] ✗ IPv6 not disabled"
+        ((errors++))
+    else
+        log "[Verify] ✓ IPv6 disabled"
+    fi
+
+    if [ $errors -eq 0 ]; then
+        log "[Verify] ✓ All checks passed - MITM is operational"
+        return 0
+    else
+        log "[Verify] ✗ $errors checks failed - MITM may not work correctly"
+        return 1
+    fi
+}
+
+################################################################################
+# SHOW TRAFFIC STATISTICS
+################################################################################
+show_traffic_stats() {
+    log "[Stats] ===== Current Traffic Statistics ====="
+
+    log "[Stats] Ethernet Interface (${LAN_IF}):"
+    ip -s link show "$LAN_IF" 2>/dev/null || log "[Stats] Interface not found"
+
+    if [ "$WIFI_ENABLED" = "true" ]; then
+        log "[Stats] "
+        log "[Stats] WiFi Interface (${WIFI_IF}):"
+        ip -s link show "$WIFI_IF" 2>/dev/null || log "[Stats] Interface not found"
+    fi
+
+    log "[Stats] "
+    log "[Stats] Active DHCP Leases:"
+    if [ -f /var/lib/misc/dnsmasq.leases ]; then
+        cat /var/lib/misc/dnsmasq.leases
+    else
+        log "[Stats] No active leases"
+    fi
+
+    log "[Stats] "
+    log "[Stats] Current iptables NAT rules:"
+    iptables -t nat -S
+
+    log "[Stats] ================================"
+}
+
+################################################################################
+# EXPORT CONFIGURATION TO JSON
+################################################################################
+export_config_json() {
+    local json_file="${RESULTS_DIR}/mitm-config-${TIMESTAMP}.json"
+
+    cat > "$json_file" <<EOF
+{
+  "version": "${VERSION}",
+  "timestamp": "$(date -Iseconds)",
+  "interfaces": {
+    "lan": "$LAN_IF",
+    "wan": "$WAN_IF",
+    "wifi": "$WIFI_IF"
+  },
+  "network": {
+    "lan_ip": "$LAN_IP",
+    "lan_netmask": "$LAN_NETMASK",
+    "wifi_ip": "$WIFI_IP",
+    "wifi_netmask": "$WIFI_NETMASK",
+    "dhcp_range_ethernet": "${DHCP_RANGE_START}-${DHCP_RANGE_END}",
+    "dhcp_range_wifi": "${WIFI_DHCP_START}-${WIFI_DHCP_END}",
+    "dhcp_lease_time": "$DHCP_LEASE_TIME"
+  },
+  "wifi": {
+    "enabled": $WIFI_ENABLED,
+    "ssid": "$WIFI_SSID",
+    "band": "$WIFI_BAND",
+    "channel": $WIFI_CHANNEL,
+    "country": "$WIFI_COUNTRY"
+  },
+  "files": {
+    "log": "$LOGFILE",
+    "backup": "$STATE_BACKUP",
+    "dnsmasq_conf": "$DNSMASQ_CONF",
+    "hostapd_conf": "$HOSTAPD_CONF"
+  }
+}
+EOF
+
+    log "[Export] Configuration exported to: $json_file"
+}
+
 ################################################################################
 # START MITM CONFIGURATION
 ################################################################################
 start_mitm() {
-    log "[MITM] ===== Starting MITM Configuration ====="
+    log "[MITM] ===== Starting MITM Configuration (${MODE} mode) ====="
 
-    # Backup current state first
+    # Backup current state first (only in capture mode)
     backup_system_state
+
+    # Save configuration to file (router mode only)
+    if [ "$MODE" = "router" ]; then
+        save_config
+    fi
 
     # Step 1: Flush iptables
     log "[MITM] (1/12) Flushing iptables rules"
@@ -451,10 +781,22 @@ start_mitm() {
     log "[MITM] iptables flushed successfully"
 
     # Step 2: Disable IPv6
-    log "[MITM] (2/12) Disabling IPv6 to prevent leaks"
+    log "[MITM] (2/12) Disabling IPv6 completely to prevent leaks"
     sysctl -w net.ipv6.conf.all.disable_ipv6=1 >/dev/null
     sysctl -w net.ipv6.conf.default.disable_ipv6=1 >/dev/null
-    log "[MITM] IPv6 disabled"
+    sysctl -w net.ipv6.conf.lo.disable_ipv6=1 >/dev/null
+
+    # Disable IPv6 on specific interfaces
+    sysctl -w net.ipv6.conf."${LAN_IF}".disable_ipv6=1 >/dev/null 2>&1 || true
+    sysctl -w net.ipv6.conf."${WAN_IF}".disable_ipv6=1 >/dev/null 2>&1 || true
+    sysctl -w net.ipv6.conf."${WIFI_IF}".disable_ipv6=1 >/dev/null 2>&1 || true
+
+    # Block IPv6 traffic in iptables
+    ip6tables -P INPUT DROP 2>/dev/null || true
+    ip6tables -P OUTPUT DROP 2>/dev/null || true
+    ip6tables -P FORWARD DROP 2>/dev/null || true
+
+    log "[MITM] IPv6 completely disabled (sysctl + ip6tables)"
 
     # Step 3: Enable IP forwarding
     log "[MITM] (3/12) Enabling IP forwarding"
@@ -484,7 +826,9 @@ start_mitm() {
         if configure_wifi_hotspot; then
             log "[MITM] WiFi hotspot configured successfully"
         else
-            log "[MITM] Warning: WiFi hotspot configuration failed, continuing with Ethernet only"
+            log "[MITM] ERROR: WiFi hotspot configuration failed"
+            log "[MITM] Check: iw list, dmesg, and hostapd logs"
+            log "[MITM] Continuing with Ethernet only..."
             WIFI_ENABLED="false"
             ip addr flush dev "$WIFI_IF" 2>/dev/null || true
             ip link set "$WIFI_IF" down 2>/dev/null || true
@@ -493,19 +837,12 @@ start_mitm() {
         log "[MITM] (5/12) WiFi hotspot disabled, skipping"
     fi
 
-
     # Step 6: Get WAN DNS servers
-    log "[MITM] (6/12) Detecting DNS servers from system"
-    local wan_dns_primary=$(grep nameserver /etc/resolv.conf | awk '{print $2}' | head -n 1)
-    local wan_dns_secondary=$(grep nameserver /etc/resolv.conf | awk '{print $2}' | sed -n '2p')
+    log "[MITM] (6/12) Using Cloudflare DNS servers"
+    local wan_dns_primary="1.1.1.1"
+    local wan_dns_secondary="1.0.0.1"
 
-    if [ -z "$wan_dns_primary" ]; then
-        wan_dns_primary="8.8.8.8"
-        wan_dns_secondary="8.8.4.4"
-        log "[MITM] Warning: No DNS found, using Google DNS: $wan_dns_primary, $wan_dns_secondary"
-    else
-        log "[MITM] Using DNS servers: Primary=$wan_dns_primary, Secondary=$wan_dns_secondary"
-    fi
+    log "[MITM] DNS servers configured: Primary=$wan_dns_primary, Secondary=$wan_dns_secondary"
 
     # Step 7: Configure iptables NAT for internet traffic
     log "[MITM] (7/12) Configuring NAT rules for internet traffic"
@@ -524,56 +861,49 @@ start_mitm() {
 
     log "[MITM] NAT rules configured"
 
-    # Step 8: Configure DNS routing (DNAT for DNS requests to WAN DNS)
-    log "[MITM] (8/12) Configuring DNS routing to WAN DNS servers"
+    # Step 8: Configure DNS routing (optional - dnsmasq now handles DNS)
+    log "[MITM] (8/12) DNS will be handled by dnsmasq (forwarding to ${wan_dns_primary})"
 
-    # Redirect DNS queries from LAN
-    iptables -t nat -A PREROUTING -i "$LAN_IF" -p udp --dport 53 -j DNAT --to-destination "$wan_dns_primary:53"
-    iptables -t nat -A PREROUTING -i "$LAN_IF" -p tcp --dport 53 -j DNAT --to-destination "$wan_dns_primary:53"
-    iptables -A FORWARD -i "$LAN_IF" -p udp --dport 53 -j ACCEPT
-    iptables -A FORWARD -i "$LAN_IF" -p tcp --dport 53 -j ACCEPT
+    # Note: DNS DNAT rules are no longer needed as dnsmasq is listening on port 53
+    # and forwarding DNS requests to the WAN DNS servers directly
+    # The client devices will use the gateway IP (LAN_IP/WIFI_IP) as their DNS server
 
-    # Redirect DNS queries from WiFi (if WiFi enabled)
-    if [ "$WIFI_ENABLED" = "true" ]; then
-        iptables -t nat -A PREROUTING -i "$WIFI_IF" -p udp --dport 53 -j DNAT --to-destination "$wan_dns_primary:53"
-        iptables -t nat -A PREROUTING -i "$WIFI_IF" -p tcp --dport 53 -j DNAT --to-destination "$wan_dns_primary:53"
-        iptables -A FORWARD -i "$WIFI_IF" -p udp --dport 53 -j ACCEPT
-        iptables -A FORWARD -i "$WIFI_IF" -p tcp --dport 53 -j ACCEPT
-    fi
-
-    log "[MITM] DNS requests from LAN/WiFi will be routed to ${wan_dns_primary}"
+    log "[MITM] DNS requests from clients will be processed by dnsmasq and forwarded to ${wan_dns_primary}"
 
     # Step 9: Create dnsmasq configuration for DHCP
     log "[MITM] (9/12) Creating dnsmasq DHCP configuration"
 
-    # Build interface list for dnsmasq
-    local dnsmasq_interfaces="interface=${LAN_IF}"
-    if [ "$WIFI_ENABLED" = "true" ]; then
-        dnsmasq_interfaces="${dnsmasq_interfaces}
-interface=${WIFI_IF}"
-    fi
-
 cat > "$DNSMASQ_CONF" <<EOF
-# dnsmasq configuration for MITM capture (DHCP only, DNS disabled)
+# dnsmasq configuration for MITM capture (DHCP + DNS server)
 interface=${LAN_IF}
 interface=${WIFI_IF}
 bind-interfaces
 
 # DHCP for Ethernet (eth1)
-dhcp-range=interface:${LAN_IF},${LAN_DHCP_START},${LAN_DHCP_END},${DHCP_LEASE_TIME}
+dhcp-range=interface:${LAN_IF},${DHCP_RANGE_START},${DHCP_RANGE_END},${DHCP_LEASE_TIME}
 dhcp-option=interface:${LAN_IF},3,${LAN_IP}
-dhcp-option=interface:${LAN_IF},6,${DNS1_IP},${DNS2_IP}
+dhcp-option=interface:${LAN_IF},6,${LAN_IP}
 
 # DHCP for WiFi (wlan1)
 dhcp-range=interface:${WIFI_IF},${WIFI_DHCP_START},${WIFI_DHCP_END},${DHCP_LEASE_TIME}
 dhcp-option=interface:${WIFI_IF},3,${WIFI_IP}
-dhcp-option=interface:${WIFI_IF},6,${DNS1_IP},${DNS2_IP}
+dhcp-option=interface:${WIFI_IF},6,${WIFI_IP}
 
+# DNS configuration
 port=53
+server=${wan_dns_primary}
+server=${wan_dns_secondary}
+no-resolv
+
+# Disable IPv6
+listen-address=${LAN_IP}
+listen-address=${WIFI_IP}
+
+log-queries
 log-dhcp
 EOF
 
-    log "[MITM] dnsmasq configuration created (DHCP on eth1${WIFI_ENABLED:+ and wlan1})"
+    log "[MITM] dnsmasq configuration created (DHCP + DNS on eth1${WIFI_ENABLED:+ and wlan1})"
 
     # Step 10: Start dnsmasq
     log "[MITM] (10/12) Starting dnsmasq DHCP server"
@@ -607,7 +937,7 @@ EOF
         log "[MITM] WiFi Hotspot Configuration:"
         log "[MITM]   Interface: ${WIFI_IF}"
         log "[MITM]   SSID: ${WIFI_SSID}"
-        log "[MITM]   Password: WIFI_PASSWORD"
+        log "[MITM]   Password: **********"
         log "[MITM]   Band: ${WIFI_BAND} ($([ "$WIFI_BAND" = "a" ] && echo "5GHz" || echo "2.4GHz"))"
         log "[MITM]   Channel: ${WIFI_CHANNEL}"
         log "[MITM]   Country: ${WIFI_COUNTRY}"
@@ -618,19 +948,22 @@ EOF
 
     log "[MITM] "
     log "[MITM] WAN Interface: ${WAN_IF}"
-    log "[MITM] DHCP Range: ${LAN_DHCP_START} - ${LAN_DHCP_END}"
+    log "[MITM] DHCP Range (Ethernet): ${DHCP_RANGE_START} - ${DHCP_RANGE_END}"
+    if [ "$WIFI_ENABLED" = "true" ]; then
+        log "[MITM] DHCP Range (WiFi): ${WIFI_DHCP_START} - ${WIFI_DHCP_END}"
+    fi
     log "[MITM] DHCP Lease Time: ${DHCP_LEASE_TIME}"
-    log "[MITM] DNS Routing: Transparent to ${wan_dns_primary} (via iptables DNAT)"
+    log "[MITM] DNS Server: dnsmasq on gateway (forwarding to ${wan_dns_primary})"
     log "[MITM] "
     log "[MITM] Next steps:"
     log "[MITM] 1. Connect SOURCESVR device via:"
     log "[MITM]    - Ethernet: Connect to ${LAN_IF} port"
 
     if [ "$WIFI_ENABLED" = "true" ]; then
-        log "[MITM]    - WiFi: Connect to SSID '${WIFI_SSID}' with password '${WIFI_PASSWORD}'"
+        log "[MITM]    - WiFi: Connect to SSID '${WIFI_SSID}'"
     fi
 
-    log "[MITM] 2. Device will receive IP via DHCP (${LAN_DHCP_START} - ${LAN_DHCP_END})"
+    log "[MITM] 2. Device will receive IP via DHCP"
     log "[MITM] 3. Start Wireshark: wireshark -i ${LAN_IF} -k"
 
     if [ "$WIFI_ENABLED" = "true" ]; then
@@ -640,8 +973,16 @@ EOF
     log "[MITM] 4. Apply Wireshark filter: ip.addr == <SOURCESVR_IP> && http"
     log "[MITM] "
     log "[MITM] To check DHCP leases: cat /var/lib/misc/dnsmasq.leases"
+    log "[MITM] To view statistics: $0 --stats"
     log "[MITM] To stop and restore: $0 --stop"
     log "[MITM] ================================"
+
+    # Export configuration to JSON
+    export_config_json
+
+    # Run post-startup verification
+    log "[MITM] "
+    verify_mitm_status
 }
 
 ################################################################################
@@ -768,10 +1109,18 @@ install_prerequisites() {
         packages_to_install+=("hostapd")
     fi
 
+    # Create runs directory if it doesn't exist
+    if [ ! -d "$RUNS_DIR" ]; then
+        log "[Install] Creating runs directory: $RUNS_DIR"
+        mkdir -p "$RUNS_DIR"
+    else
+        log "[Install] Runs directory already exists: $RUNS_DIR"
+    fi
+
     # If nothing to install, exit early
     if [ ${#packages_to_install[@]} -eq 0 ]; then
         log "[Install] All prerequisites are already installed"
-        log "[Install] Nothing to install"
+        log "[Install] Runs directory verified"
         return 0
     fi
 
@@ -795,6 +1144,7 @@ install_prerequisites() {
     fi
 
     log "[Install] Prerequisites installed successfully"
+    log "[Install] Runs directory ready: $RUNS_DIR"
 }
 
 ################################################################################
@@ -812,6 +1162,7 @@ Script: ${SCRIPT_NAME}
 
 DESCRIPTION:
     Configure Linux as a Man-In-The-Middle router to capture and analyze
+    network traffic from SOURCESVR devices.
 
     This script:
     - Creates a reversible MITM network setup
@@ -827,21 +1178,34 @@ USAGE:
 
 REQUIRED ARGUMENTS:
     --exec, -exe         Execute MITM configuration
-    --stop, -st          Stop MITM and restore system state
+    --start, -sta        Same as --exec (alias)
+    --stop, -sto         Stop MITM and restore system state
+
+MODE SELECTION:
+    --router             Router mode (default) - permanent, minimal logs, no backup
+    --capture            Capture mode - verbose logs, system backup, analysis
+
+    Note: If no mode is specified, --router is used by default
+
+SYSTEMD SERVICE:
+    --install-service    Install as systemd service (auto-start on boot)
+    --uninstall-service  Remove systemd service
 
 OPTIONAL ARGUMENTS:
     --help, -h           Display this help message (default if no args)
     --prerequis, -pr     Check prerequisites only
     --install, -i        Install missing prerequisites
     --simulate, -s       Simulate execution (dry-run)
+    --stats              Show current traffic statistics
     --changelog, -ch     Display full changelog
+    --auto-detect        Auto-detect network interfaces
 
 NETWORK CONFIGURATION OPTIONS:
     --lan-if <if>        LAN interface name (default: ${LAN_IF})
     --wan-if <if>        WAN interface name (default: ${WAN_IF})
     --lan-ip <ip>        LAN gateway IP address (default: ${LAN_IP})
     --lan-netmask <mask> LAN netmask in CIDR (default: ${LAN_NETMASK})
-    --clientmitm-range <range> DHCP IP range (default: ${LAN_DHCP_START}-${LAN_DHCP_END})
+    --dhcp-range <range> DHCP IP range (default: ${DHCP_RANGE_START}-${DHCP_RANGE_END})
 
 WIFI HOTSPOT CONFIGURATION OPTIONS:
     --wifi-disable       Disable WiFi hotspot (Ethernet only)
@@ -856,7 +1220,7 @@ CONFIGURATION (Current Defaults):
     LAN Interface: ${LAN_IF}
     WAN Interface: ${WAN_IF}
     LAN IP: ${LAN_IP}/${LAN_NETMASK}
-    DHCP Range: ${LAN_DHCP_START} - ${LAN_DHCP_END}
+    DHCP Range (Ethernet): ${DHCP_RANGE_START} - ${DHCP_RANGE_END}
 
     WiFi Hotspot: $([ "$WIFI_ENABLED" = "true" ] && echo "ENABLED" || echo "DISABLED")
     WiFi Interface: ${WIFI_IF}
@@ -877,63 +1241,60 @@ EXAMPLES:
     # Install missing packages
     sudo ./${SCRIPT_NAME} --install
 
-    # Start MITM with default settings (Ethernet + WiFi hotspot)
+    # Start in ROUTER mode (default - permanent, minimal logs)
     sudo ./${SCRIPT_NAME} --exec
+    sudo ./${SCRIPT_NAME} --router --exec
 
-    # Start MITM with Ethernet only (WiFi disabled)
+    # Start in CAPTURE mode (verbose logs, backup system state)
+    sudo ./${SCRIPT_NAME} --capture --exec
+
+    # Install as systemd service (auto-start on boot)
+    sudo ./${SCRIPT_NAME} --install-service
+    sudo systemctl enable mitm-router
+    sudo systemctl start mitm-router
+
+    # Check service status
+    sudo systemctl status mitm-router
+
+    # Uninstall systemd service
+    sudo ./${SCRIPT_NAME} --uninstall-service
+
+    # Auto-detect interfaces and start
+    sudo ./${SCRIPT_NAME} --auto-detect --exec
+
+    # Start with Ethernet only (WiFi disabled)
     sudo ./${SCRIPT_NAME} --exec --wifi-disable
 
-    # Start MITM with custom WiFi SSID and password
+    # Start with custom WiFi SSID and password
     sudo ./${SCRIPT_NAME} --exec --wifi-ssid "MyMITM" --wifi-pass "MySecurePass123"
 
-    # Start MITM with 2.4GHz WiFi instead of 5GHz
-    sudo ./${SCRIPT_NAME} --exec --wifi-band g --wifi-channel 6
-
-    # Start MITM with custom LAN configuration
-    sudo ./${SCRIPT_NAME} --exec --lan-ip 10.0.0.1 --clientmitm-range 10.0.0.10-10.0.0.50
-
-    # Simulate execution without changes
-    sudo ./${SCRIPT_NAME} --simulate --exec
+    # Show traffic statistics
+    sudo ./${SCRIPT_NAME} --stats
 
     # Stop MITM and restore system
     sudo ./${SCRIPT_NAME} --stop
 
-WIRESHARK CAPTURE COMMANDS:
-    # Capture Ethernet traffic
-    wireshark -i ${LAN_IF} -k
-
-    # Capture WiFi hotspot traffic
-    wireshark -i ${WIFI_IF} -k
-
-    # Capture with pre-filter
-    wireshark -i ${LAN_IF} -k -f 'net ${LAN_IP%.*}.0/24'
-
-    # Display filters (apply after capture starts):
-    - All SOURCESVR traffic: ip.addr == <SOURCESVR_IP>
-    - HTTP only: ip.addr == <SOURCESVR_IP> && http
-    - HTTPS only: ip.addr == <SOURCESVR_IP> && tcp.port == 443
-    - DNS queries: dns
-    - Specific server: ip.dst == <SERVER_IP>
-
-SOURCESVR DEVICE CONFIGURATION:
-    Option 1 - Ethernet Connection:
-    - Connect device to ${LAN_IF} via Ethernet cable
-    - Configure for DHCP (automatic)
-
-    Option 2 - WiFi Connection:
-    - Connect to WiFi network: ${WIFI_SSID}
-    - WiFi Password: ${WIFI_PASSWORD}
-    - Configure for DHCP (automatic)
-
-    The device will automatically receive:
-    - IP Address: ${LAN_DHCP_START} - ${LAN_DHCP_END}
-    - Gateway: ${LAN_IP}
-    - DNS: ${LAN_IP} (routed transparently to WAN DNS)
-
-
 FILES CREATED:
+    Config: ${SCRIPT_DIR}/mitm-router.conf (persistent configuration)
     Logs: ${LOGS_DIR}/log.${SCRIPT_NAME}.<timestamp>.${VERSION}.log
-    Backups: ${RESULTS_DIR}/system-state-backup.<timestamp>.tar.gz
+    Runtime files: ${RUNS_DIR}/*.{pid,conf} (dnsmasq, hostapd)
+    Backups (capture mode only): ${RESULTS_DIR}/system-state-backup.<timestamp>.tar.gz
+
+ROUTER MODE vs CAPTURE MODE:
+    Router Mode (default):
+    - Permanent configuration
+    - Minimal logging (errors only)
+    - No system backup
+    - Configuration saved to ./mitm-router.conf
+    - Runtime files in ./runs/ (dnsmasq-router.*, hostapd-router.*)
+    - Designed for daily use as home router
+
+    Capture Mode:
+    - Temporary configuration
+    - Verbose logging (all operations)
+    - Full system state backup
+    - Runtime files in ./runs/ (dnsmasq-capture-<timestamp>.*, hostapd-capture-<timestamp>.*)
+    - Designed for packet analysis and debugging
 
 NOTES:
     - All modifications are fully reversible
@@ -942,7 +1303,6 @@ NOTES:
     - DNS queries are forwarded to WAN DNS (not intercepted)
     - IPv6 is disabled to prevent traffic leaks
     - WiFi hotspot uses WPA2-PSK (CCMP/AES) encryption
-    - Both Ethernet and WiFi share the same subnet
 ================================================================================
 EOF
 }
@@ -955,6 +1315,38 @@ show_changelog() {
 ================================================================================
 CHANGELOG
 ================================================================================
+v3.2 - 2025-02-03 - DUAL MODE: Router (default) + Capture
+-----------------
+- Added --router mode (default, permanent, minimal logs, no backup)
+- Added --capture mode (verbose logs, system backup, analysis)
+- Configuration file stored in script directory: ./mitm-router.conf
+- Added systemd service installation (--install-service)
+- Added --uninstall-service to remove systemd service
+- Mode auto-detection: default is --router if not specified
+- Logs optimized per mode (minimal for router, verbose for capture)
+- Added persistent configuration loading from ./mitm-router.conf
+- Runtime files (PID/config) stored in ./runs/ directory (never /tmp)
+- Created ./runs/ directory for all runtime files
+- Router mode: ./runs/dnsmasq-router.{conf,pid}, ./runs/hostapd-router.{conf,pid}
+- Capture mode: ./runs/dnsmasq-capture-<timestamp>.{conf,pid}, etc.
+- Added ./runs/ to .gitignore automatically
+- --install now creates ./runs/ directory if missing
+- Added save_config() and load_config() functions
+- Separated file paths based on operating mode
+
+v3.1 - 2025-02-03 - BUG FIXES & IMPROVEMENTS
+-----------------
+- Fixed critical duplicate --stop argument parsing
+- Fixed --start/-st and --stop/-st alias conflict (now -sta and -sto)
+- Added post-startup healthcheck verification (verify_mitm_status)
+- Added show_traffic_stats() function for monitoring
+- Added export_config_json() for configuration export
+- Added auto-detection of network interfaces
+- Improved error handling for hostapd/dnsmasq failures
+- Added input validation for WiFi password length
+- Cleaned up obsolete TODOs
+- Password now hidden in summary output (shows *********)
+
 v3.0 - 2025-01-28 - MAJOR RELEASE: Separate Subnets & Performance Optimization
 -----------------
 - Fixed critical dnsmasq startup issue (wlan1 needs IP before dnsmasq starts)
@@ -974,7 +1366,7 @@ v3.0 - 2025-01-28 - MAJOR RELEASE: Separate Subnets & Performance Optimization
 - Added --start alias for --exec command (both work identically)
 - Both Ethernet and WiFi devices now work independently on separate subnets
 - Complete error handling for WiFi hotspot failures with automatic fallback
-- Automatic IP assignment to wlan1 before starting hostapd/dnsmasq
+
 v2.5 - 2025-01-27 - MAJOR RELEASE: Complete WiFi Hotspot Integration
 -----------------
 - Added WiFi hotspot capability on wlan1 (5GHz by default, dual-band support)
@@ -993,70 +1385,6 @@ v2.5 - 2025-01-27 - MAJOR RELEASE: Complete WiFi Hotspot Integration
 - Improved logging with WiFi hotspot status verification
 - Updated help with comprehensive WiFi configuration examples
 - Complete error handling for WiFi hotspot failures
-
-v2.1 - 2025-01-27 - Minor corrections to dnsmasq & dhcp configuration
------------------
-- Corrected dnsmasq DHCP configuration issues
-- Minor bug fixes
-
-v1.7 - 2025-01-17
------------------
-- Re-added DHCP server functionality with dnsmasq
-- SOURCESVR device now gets IP automatically via DHCP
-- Added dnsmasq back to prerequisites
-- DNS still routed transparently to WAN DNS via iptables
-- Combined DHCP (dnsmasq) + DNS routing (iptables DNAT)
-
-v1.6 - 2025-01-17
------------------
-- Added configurable command-line arguments for all network parameters
-- New options: --lan-if, --wan-if, --lan-ip, --lan-netmask, --clientmitm-range
-- All parameters now customizable via command line with sensible defaults
-- Help dynamically shows current default values
-- Supports custom interface names (enp0s3, wlp2s0, etc.)
-- Enhanced examples showing various configuration combinations
-
-v1.5 - 2025-01-17
------------------
-- MAJOR: Removed dnsmasq dependency completely
-- Implemented DNS routing via iptables DNAT rules
-- DNS requests transparently routed to WAN DNS servers
-- SOURCESVR device requires STATIC IP configuration
-- Reduced dependencies: only iptables, iproute2, procps needed
-
-v1.4 - 2025-01-17
------------------
-- Optimized --install to skip apt update when all prerequisites satisfied
-- Only installs actually missing packages
-- Faster execution when nothing to install
-
-v1.3 - 2025-01-17
------------------
-- Enhanced --prerequis to display installable packages
-- Shows detailed list of missing packages with names
-- Provides clear installation command suggestion
-
-v1.2 - 2025-01-17
------------------
-- Fixed help display order
-- Help now shows BEFORE gitignore management
-
-v1.1 - 2025-01-17
------------------
-- Added proper argument handling with --help as default
-- All mandatory arguments with short versions
-- Help displayed by default when no arguments provided
-
-v1.0 - 2025-01-17
------------------
-- Initial release
-- Full MITM routing configuration
-- DHCP server with dnsmasq
-- DNS forwarding to WAN DNS servers
-- Complete system state backup and restore
-- iptables NAT configuration
-- IPv6 leak prevention
-- Comprehensive logging
 ================================================================================
 EOF
 }
@@ -1076,6 +1404,7 @@ manage_gitignore
 # Parse arguments
 SIMULATE=false
 ACTION=""
+AUTO_DETECT=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -1095,28 +1424,50 @@ while [[ $# -gt 0 ]]; do
             ACTION="install"
             shift
             ;;
-        --exec|-exe)
+        --exec|-exe|--start|-sta)
             ACTION="start"
             shift
             ;;
-        --start|-sta)
-            ACTION="start"
+        --router)
+            MODE="router"
             shift
             ;;
-        --stop|-st)
+        --capture)
+            MODE="capture"
+            shift
+            ;;
+        --install-service)
+            ACTION="install_service"
+            shift
+            ;;
+        --uninstall-service)
+            ACTION="uninstall_service"
+            shift
+            ;;
+        --stop|-sto)
             ACTION="stop"
+            shift
+            ;;
+        --stats)
+            ACTION="stats"
             shift
             ;;
         --simulate|-s)
             SIMULATE=true
             shift
             ;;
+        --auto-detect)
+            AUTO_DETECT=true
+            shift
+            ;;
         --lan-if)
             LAN_IF="$2"
+            LAN_IF_OVERRIDE=true
             shift 2
             ;;
         --wan-if)
             WAN_IF="$2"
+            WAN_IF_OVERRIDE=true
             shift 2
             ;;
         --lan-ip)
@@ -1127,9 +1478,9 @@ while [[ $# -gt 0 ]]; do
             LAN_NETMASK="$2"
             shift 2
             ;;
-        --clientmitm-range)
-            LAN_DHCP_START="${2%-*}"
-            LAN_DHCP_END="${2#*-}"
+        --dhcp-range)
+            DHCP_RANGE_START="${2%-*}"
+            DHCP_RANGE_END="${2#*-}"
             shift 2
             ;;
         --wifi-disable)
@@ -1138,6 +1489,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --wifi-if)
             WIFI_IF="$2"
+            WIFI_IF_OVERRIDE=true
             shift 2
             ;;
         --wifi-ssid)
@@ -1145,6 +1497,10 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --wifi-pass)
+            if [ ${#2} -lt 8 ]; then
+                log "[Error] WiFi password must be at least 8 characters"
+                exit 1
+            fi
             WIFI_PASSWORD="$2"
             shift 2
             ;;
@@ -1168,6 +1524,14 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Auto-detect interfaces if requested
+if [ "$AUTO_DETECT" = true ]; then
+    detect_interfaces
+fi
+
+# Load configuration from file (if exists)
+load_config
+
 # Execute action based on parsed arguments
 case $ACTION in
     check_prereq)
@@ -1183,6 +1547,14 @@ case $ACTION in
     install)
         log "===== Installing Prerequisites ====="
         install_prerequisites
+        ;;
+    install_service)
+        log "===== Installing Systemd Service ====="
+        install_systemd_service
+        ;;
+    uninstall_service)
+        log "===== Uninstalling Systemd Service ====="
+        uninstall_systemd_service
         ;;
     start)
         if [ "$SIMULATE" = true ]; then
@@ -1228,13 +1600,15 @@ case $ACTION in
             restore_system_state
         fi
         ;;
+    stats)
+        show_traffic_stats
+        ;;
     *)
         echo "No action specified. Use --help for usage information"
         exit 1
         ;;
 esac
 
-# systemctl restart iptables-fw.service
 log "===== Script execution completed ====="
 
 exit 0

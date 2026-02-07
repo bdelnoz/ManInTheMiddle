@@ -47,13 +47,14 @@ WIFI_IF="wlan1"                      # WiFi interface for hotspot MITM
 # WIFI_IF="wlan1"   # TP-Link pour hotspot MITM ✓
 # LAN_IF="eth1"     # Ethernet ✓
 
+
+
 # LAN Configuration
 LAN_IP="192.168.50.1"                # IP address for LAN gateway (Ethernet)
 LAN_NETMASK="24"                     # Netmask for LAN network
-LAN_DHCP_START="192.168.50.10"     # DHCP pool start address (Ethernet)
-LAN_DHCP_END="192.168.50.50"       # DHCP pool end address (Ethernet)
+DHCP_RANGE_START="192.168.50.10"     # DHCP pool start address (Ethernet)
+DHCP_RANGE_END="192.168.50.50"       # DHCP pool end address (Ethernet)
 DHCP_LEASE_TIME="12h"                # DHCP lease duration
-
 DNS1_IP="1.1.1.1"
 DNS2_IP="1.0.0.1"
 
@@ -381,6 +382,26 @@ configure_wifi_hotspot() {
         ieee80211ac="1"  # Enable 802.11ac for 5GHz
     fi
 
+# interface=${WIFI_IF}
+# driver=nl80211
+# ssid=${WIFI_SSID}
+# country_code=${WIFI_COUNTRY}
+# hw_mode=a
+# channel=${WIFI_CHANNEL}
+# ieee80211n=1
+# ieee80211ac=0
+# ht_capab=[HT20][SHORT-GI-20]
+# wmm_enabled=1
+# ieee80211d=1
+# auth_algs=1
+# wpa=2
+# wpa_key_mgmt=WPA-PSK
+# rsn_pairwise=CCMP
+# wpa_passphrase=${WIFI_PASSWORD}
+# macaddr_acl=0
+# ignore_broadcast_ssid=0
+
+
     # Create hostapd configuration
     log "[WiFi] (3/4) Creating hostapd configuration"
     cat > "$HOSTAPD_CONF" <<EOF
@@ -393,31 +414,76 @@ hw_mode=${WIFI_BAND}
 channel=${WIFI_CHANNEL}
 country_code=${WIFI_COUNTRY}
 
-ctrl_interface=/var/run/hostapd
-ctrl_interface_group=0
-
+# 802.11n settings (HT - High Throughput)
 ieee80211n=1
-ht_capab=[HT40+][LDPC][SHORT-GI-20][SHORT-GI-40][DSSS_CCK-40][MAX-AMSDU-7935]
+# ht_capab=[HT40+][SHORT-GI-20][SHORT-GI-40][RX-STBC1][MAX-AMSDU-7935]
+ht_capab=[HT40+][SHORT-GI-20][SHORT-GI-40][MAX-AMSDU-7935]
 
+# 802.11ac settings (VHT - Very High Throughput) for 5GHz
 ieee80211ac=1
-vht_capab=[RXLDPC][SHORT-GI-80][TX-STBC-2BY1][SU-BEAMFORMEE][MU-BEAMFORMEE][MAX-MPDU-11454][MAX-A-MPDU-LEN-EXP7]
-vht_oper_chwidth=1
-vht_oper_centr_freq_seg0_idx=42
+# vht_capab=[MAX-MPDU-11454][SHORT-GI-80][RX-STBC-1][MAX-A-MPDU-LEN-EXP7]
+vht_capab=[MAX-MPDU-11454][SHORT-GI-80][MAX-A-MPDU-LEN-EXP7]
+vht_oper_chwidth=1                    # 80 MHz channel width
+vht_oper_centr_freq_seg0_idx=42      # Centre à 5775 MHz (149+153+157+161)
 
+# WMM (Wi-Fi Multimedia) for QoS
 wmm_enabled=1
+
+# Security: WPA2-PSK (CCMP)
 auth_algs=1
 wpa=2
 wpa_key_mgmt=WPA-PSK
 rsn_pairwise=CCMP
 wpa_passphrase=${WIFI_PASSWORD}
 
+# Additional settings
 macaddr_acl=0
 ignore_broadcast_ssid=0
 
+# Logging
 logger_syslog=-1
 logger_syslog_level=2
 logger_stdout=-1
 logger_stdout_level=2
+
+#
+#
+# interface=${WIFI_IF}
+# driver=nl80211
+# ssid=${WIFI_SSID}
+# hw_mode=${WIFI_BAND}
+# channel=${WIFI_CHANNEL}
+# country_code=${WIFI_COUNTRY}  # "00" for world regulatory domain (no restrictions)
+#
+# # 802.11n settings (HT - High Throughput)
+# ieee80211n=1
+# ht_capab=[HT40+][SHORT-GI-20][SHORT-GI-40][DSSS_CCK-40]
+#
+# # 802.11ac settings (VHT - Very High Throughput) for 5GHz
+# ieee80211ac=1
+# vht_capab=[MAX-MPDU-11454][SHORT-GI-80][TX-STBC-2BY1][RX-STBC-1]
+# vht_oper_chwidth=1                   # 80 MHz channel width
+# vht_oper_centr_freq_seg0_idx=${VHT_CENTER_IDX}  # Dynamic calculation
+#
+# # WMM (Wi-Fi Multimedia) for QoS (required for stability)
+# wmm_enabled=1
+#
+# # Security: WPA2-PSK (CCMP)
+# auth_algs=1
+# wpa=2
+# wpa_key_mgmt=WPA-PSK
+# rsn_pairwise=CCMP
+# wpa_passphrase=${WIFI_PASSWORD}
+#
+# # Additional settings
+# macaddr_acl=0
+# ignore_broadcast_ssid=0
+#
+# # Logging configuration
+# logger_syslog=-1
+# logger_syslog_level=2
+# logger_stdout=-1
+# logger_stdout_level=2
 EOF
 
     # Start hostapd
@@ -560,7 +626,7 @@ interface=${WIFI_IF}
 bind-interfaces
 
 # DHCP for Ethernet (eth1)
-dhcp-range=interface:${LAN_IF},${LAN_DHCP_START},${LAN_DHCP_END},${DHCP_LEASE_TIME}
+dhcp-range=interface:${LAN_IF},${DHCP_RANGE_START},${DHCP_RANGE_END},${DHCP_LEASE_TIME}
 dhcp-option=interface:${LAN_IF},3,${LAN_IP}
 dhcp-option=interface:${LAN_IF},6,${DNS1_IP},${DNS2_IP}
 
@@ -618,7 +684,7 @@ EOF
 
     log "[MITM] "
     log "[MITM] WAN Interface: ${WAN_IF}"
-    log "[MITM] DHCP Range: ${LAN_DHCP_START} - ${LAN_DHCP_END}"
+    log "[MITM] DHCP Range: ${DHCP_RANGE_START} - ${DHCP_RANGE_END}"
     log "[MITM] DHCP Lease Time: ${DHCP_LEASE_TIME}"
     log "[MITM] DNS Routing: Transparent to ${wan_dns_primary} (via iptables DNAT)"
     log "[MITM] "
@@ -630,7 +696,7 @@ EOF
         log "[MITM]    - WiFi: Connect to SSID '${WIFI_SSID}' with password '${WIFI_PASSWORD}'"
     fi
 
-    log "[MITM] 2. Device will receive IP via DHCP (${LAN_DHCP_START} - ${LAN_DHCP_END})"
+    log "[MITM] 2. Device will receive IP via DHCP (${DHCP_RANGE_START} - ${DHCP_RANGE_END})"
     log "[MITM] 3. Start Wireshark: wireshark -i ${LAN_IF} -k"
 
     if [ "$WIFI_ENABLED" = "true" ]; then
@@ -841,7 +907,7 @@ NETWORK CONFIGURATION OPTIONS:
     --wan-if <if>        WAN interface name (default: ${WAN_IF})
     --lan-ip <ip>        LAN gateway IP address (default: ${LAN_IP})
     --lan-netmask <mask> LAN netmask in CIDR (default: ${LAN_NETMASK})
-    --clientmitm-range <range> DHCP IP range (default: ${LAN_DHCP_START}-${LAN_DHCP_END})
+    --clientmitm-range <range> DHCP IP range (default: ${DHCP_RANGE_START}-${DHCP_RANGE_END})
 
 WIFI HOTSPOT CONFIGURATION OPTIONS:
     --wifi-disable       Disable WiFi hotspot (Ethernet only)
@@ -856,7 +922,7 @@ CONFIGURATION (Current Defaults):
     LAN Interface: ${LAN_IF}
     WAN Interface: ${WAN_IF}
     LAN IP: ${LAN_IP}/${LAN_NETMASK}
-    DHCP Range: ${LAN_DHCP_START} - ${LAN_DHCP_END}
+    DHCP Range: ${DHCP_RANGE_START} - ${DHCP_RANGE_END}
 
     WiFi Hotspot: $([ "$WIFI_ENABLED" = "true" ] && echo "ENABLED" || echo "DISABLED")
     WiFi Interface: ${WIFI_IF}
@@ -926,7 +992,7 @@ SOURCESVR DEVICE CONFIGURATION:
     - Configure for DHCP (automatic)
 
     The device will automatically receive:
-    - IP Address: ${LAN_DHCP_START} - ${LAN_DHCP_END}
+    - IP Address: ${DHCP_RANGE_START} - ${DHCP_RANGE_END}
     - Gateway: ${LAN_IP}
     - DNS: ${LAN_IP} (routed transparently to WAN DNS)
 
@@ -1128,8 +1194,8 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --clientmitm-range)
-            LAN_DHCP_START="${2%-*}"
-            LAN_DHCP_END="${2#*-}"
+            DHCP_RANGE_START="${2%-*}"
+            DHCP_RANGE_END="${2#*-}"
             shift 2
             ;;
         --wifi-disable)
@@ -1234,7 +1300,6 @@ case $ACTION in
         ;;
 esac
 
-# systemctl restart iptables-fw.service
 log "===== Script execution completed ====="
 
 exit 0

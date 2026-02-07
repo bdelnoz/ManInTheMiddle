@@ -14,3 +14,10 @@ backup/
 *.tar.gz
 *.rar
 *.html
+
+# Section added automatically by mitm-sourcesvr.sh
+/logs
+/results
+/outputs
+/infos
+/runs

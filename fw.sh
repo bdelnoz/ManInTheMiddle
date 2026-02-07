@@ -170,7 +170,7 @@ log_to_file "Trafic DHCP et FORWARD autorisé pour hotspot WiFi MITM (wlan1)."
 # ----------------------------------------------------------------------------------------------------------------------------
 
 # REGLES IPTV - DNS
-echo " ↳ Autorisation DNS pour range IPTV"
+echo " ↳ Autorisation DNS pour range MITM-50"
 sudo iptables -A FORWARD -m iprange --src-range 192.168.50.10-192.168.50.100 -d 1.1.1.1 -p udp --dport 53 -j ACCEPT
 sudo iptables -A FORWARD -m iprange --src-range 192.168.50.10-192.168.50.100 -d 1.0.0.1 -p udp --dport 53 -j ACCEPT
 sudo iptables -A FORWARD -m iprange --src-range 192.168.50.10-192.168.50.100 -d 1.0.0.1 -p tcp --dport 53 -j ACCEPT
@@ -179,6 +179,31 @@ sudo iptables -A FORWARD -m iprange --src-range 192.168.50.10-192.168.50.100 -d 
 # DNS over TLS (port 853)
 sudo iptables -A FORWARD -m iprange --src-range 192.168.50.10-192.168.50.100 -d 1.0.0.1 -p tcp --dport 853 -j ACCEPT
 sudo iptables -A FORWARD -m iprange --src-range 192.168.50.10-192.168.50.100 -d 1.1.1.1 -p tcp --dport 853 -j ACCEPT
+
+# ============================================================
+# RÈGLES FORWARD POUR SUBNET WiFi (192.168.51.0/24)
+# ============================================================
+echo " ↳ Autorisation trafic WiFi MITM (192.168.51.0/24)"
+
+# DNS pour le subnet WiFi
+sudo iptables -A FORWARD -s 192.168.51.0/24 -d 1.1.1.1 -p udp --dport 53 -j ACCEPT
+sudo iptables -A FORWARD -s 192.168.51.0/24 -d 1.0.0.1 -p udp --dport 53 -j ACCEPT
+sudo iptables -A FORWARD -s 192.168.51.0/24 -d 1.1.1.1 -p tcp --dport 53 -j ACCEPT
+sudo iptables -A FORWARD -s 192.168.51.0/24 -d 1.0.0.1 -p tcp --dport 53 -j ACCEPT
+
+# NTP (port 123)
+sudo iptables -A FORWARD -i wlan1 -o wlan0 -s 192.168.51.0/24 -p udp --dport 123 -j ACCEPT
+
+# HTTP (port 80)
+sudo iptables -A FORWARD -i wlan1 -o wlan0 -s 192.168.51.0/24 -p tcp --dport 80 -j ACCEPT
+
+# HTTPS (port 443)
+sudo iptables -A FORWARD -i wlan1 -o wlan0 -s 192.168.51.0/24 -p tcp --dport 443 -j ACCEPT
+
+# NAT pour le subnet WiFi
+# sudo iptables -t nat -A POSTROUTING -o wlan0 -s 192.168.51.0/24 -j MASQUERADE
+
+log_to_file "Trafic WiFi MITM (192.168.51.0/24) autorisé vers Internet."
 
 # ============================================================
 # AUTORISER DNSMASQ SUR WLAN1/ETH1 (LISTENING)
@@ -203,13 +228,33 @@ sudo iptables -A FORWARD -i wlan1 -o wlan1 -p tcp --dport 53 -j ACCEPT
 
 log_to_file "dnsmasq INPUT/OUTPUT/FORWARD autorisé sur eth1 et wlan1."
 
-# Autoriser les flux SORTANTS IPTV -> Internet (depuis eth0, eth1, wlan1)
-echo " ↳ Autorisation flux IPTV vers Internet (eth0, eth1, wlan1)"
+# Autoriser les flux SORTANTS MITM-50 -> Internet (depuis eth0, eth1, wlan1)
+echo " ↳ Autorisation flux MITM-50 vers Internet (eth0, eth1, wlan1)"
 
 # Port 11254
 sudo iptables -A FORWARD -i eth0 -o wlan0 -m iprange --src-range 192.168.50.10-192.168.50.100 -p tcp --dport 11254 -j ACCEPT
 sudo iptables -A FORWARD -i eth1 -o wlan0 -m iprange --src-range 192.168.50.10-192.168.50.100 -p tcp --dport 11254 -j ACCEPT
 sudo iptables -A FORWARD -i wlan1 -o wlan0 -m iprange --src-range 192.168.50.10-192.168.50.100 -p tcp --dport 11254 -j ACCEPT
+
+# Ajouter au fw.sh AVANT les DROP finaux:
+sudo iptables -A FORWARD -i wlan1 -o wlan0 -p tcp --dport 11254 -j ACCEPT
+sudo iptables -A FORWARD -i wlan0 -o wlan1 -p tcp --sport 11254 -m state --state ESTABLISHED -j ACCEPT
+
+# Re-ajouter les règles de base
+sudo iptables -A FORWARD -i wlan0 -o eth0 -m state --state ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A FORWARD -i wlan0 -o eth1 -m state --state ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A FORWARD -i wlan0 -o wlan1 -m state --state ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A FORWARD -i wlan1 -o wlan0 -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# DNS pour TOUS les ranges
+sudo iptables -A FORWARD -m iprange --src-range 192.168.50.10-192.168.50.100 -d 1.1.1.1 -p udp --dport 53 -j ACCEPT
+sudo iptables -A FORWARD -m iprange --src-range 192.168.50.10-192.168.50.100 -d 1.0.0.1 -p udp --dport 53 -j ACCEPT
+sudo iptables -A FORWARD -m iprange --src-range 192.168.50.10-192.168.50.100 -d 1.1.1.1 -p tcp --dport 53 -j ACCEPT
+sudo iptables -A FORWARD -m iprange --src-range 192.168.50.10-192.168.50.100 -d 1.0.0.1 -p tcp --dport 53 -j ACCEPT
+
+# MITM-51 192.168.51.x (WiFi) - TOUT TRAFIC vers wlan0
+sudo iptables -A FORWARD -i wlan1 -o wlan0 -j ACCEPT
+sudo iptables -A FORWARD -i wlan0 -o wlan1 -m state --state ESTABLISHED,RELATED -j ACCEPT
 
 # NTP (port 123)
 sudo iptables -A FORWARD -i eth0 -o wlan0 -m iprange --src-range 192.168.50.10-192.168.50.100 -p udp --dport 123 -j ACCEPT
@@ -226,22 +271,23 @@ sudo iptables -A FORWARD -i eth0 -o wlan0 -m iprange --src-range 192.168.50.10-1
 sudo iptables -A FORWARD -i eth1 -o wlan0 -m iprange --src-range 192.168.50.10-192.168.50.100 -p tcp --dport 443 -j ACCEPT
 sudo iptables -A FORWARD -i wlan1 -o wlan0 -m iprange --src-range 192.168.50.10-192.168.50.100 -p tcp --dport 443 -j ACCEPT
 
-# NAT sortant IPTV
+# NAT sortant pour TOUS les réseaux internes (Ethernet + WiFi)
 sudo iptables -t nat -F POSTROUTING
-sudo iptables -t nat -A POSTROUTING -o wlan0 -m iprange --src-range 192.168.50.10-192.168.50.100 -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -o wlan0 -s 192.168.50.0/24 -j MASQUERADE  # Ethernet
+sudo iptables -t nat -A POSTROUTING -o wlan0 -s 192.168.51.0/24 -j MASQUERADE  # WiFi
 
 # Logging du trafic BLOQUÉ uniquement (1 seul LOG, juste avant DROP)
-echo " ↳ Configuration logging trafic bloqué IPTV"
-sudo iptables -A FORWARD -i eth0 -o wlan0 -m iprange --src-range 192.168.50.10-192.168.50.100 -j LOG --log-prefix "VB-BLOCKED: "
-sudo iptables -A FORWARD -i eth1 -o wlan0 -m iprange --src-range 192.168.50.10-192.168.50.100 -j LOG --log-prefix "VB-BLOCKED: "
-sudo iptables -A FORWARD -i wlan1 -o wlan0 -m iprange --src-range 192.168.50.10-192.168.50.100 -j LOG --log-prefix "VB-BLOCKED: "
+echo " ↳ Configuration logging trafic bloqué MITM-50"
+sudo iptables -A FORWARD -i eth0 -o wlan0 -m iprange --src-range 192.168.50.10-192.168.50.100 -j LOG --log-prefix "MITM-50-BLOCKED: "
+sudo iptables -A FORWARD -i eth1 -o wlan0 -m iprange --src-range 192.168.50.10-192.168.50.100 -j LOG --log-prefix "MITM-50-BLOCKED: "
+sudo iptables -A FORWARD -i wlan1 -o wlan0 -m iprange --src-range 192.168.50.10-192.168.50.100 -j LOG --log-prefix "MITM-50-BLOCKED: "
 
-# Drop final IPTV
+# Drop final MITM-50
 sudo iptables -A FORWARD -i eth0 -o wlan0 -m iprange --src-range 192.168.50.10-192.168.50.100 -j DROP
 sudo iptables -A FORWARD -i eth1 -o wlan0 -m iprange --src-range 192.168.50.10-192.168.50.100 -j DROP
 sudo iptables -A FORWARD -i wlan1 -o wlan0 -m iprange --src-range 192.168.50.10-192.168.50.100 -j DROP
 
-log_to_file "Règles IPTV configurées pour eth0, eth1 et wlan1 (hotspot WiFi)."
+log_to_file "Règles MITM-50 configurées pour eth0, eth1 et wlan1 (hotspot WiFi)."
 
 # ----------------------------------------------------------------------------------------------------------------------------
 
@@ -299,18 +345,18 @@ echo " ↳ HTTPS autorisé (HTTP bloqué)"
 sudo iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT 2>>"$LOG_FILE" || log_to_file "Erreur lors de l'autorisation HTTPS OUTPUT"
 sudo iptables -A INPUT -p tcp --sport 443 -m state --state ESTABLISHED,RELATED -j ACCEPT 2>>"$LOG_FILE" || log_to_file "Erreur lors de l'autorisation HTTPS INPUT"
 log_to_file "HTTPS autorisé (INPUT et OUTPUT), HTTP bloqué."
-
-# HTTP uniquement pour l'IP 109.61.81.65
-echo " ↳ HTTP autorisé UNIQUEMENT pour l'IP 109.61.81.65 (port 80)"
-sudo iptables -A OUTPUT -p tcp -d 109.61.81.65 --dport 80 -m state --state NEW,ESTABLISHED -j ACCEPT 2>>"$LOG_FILE" || log_to_file "Erreur lors de l'autorisation HTTP pour 109.61.81.65 (OUTPUT)"
-sudo iptables -A INPUT -p tcp -s 109.61.81.65 --sport 80 -m state --state ESTABLISHED -j ACCEPT 2>>"$LOG_FILE" || log_to_file "Erreur lors de l'autorisation HTTP pour 109.61.81.65 (INPUT)"
-log_to_file "HTTP autorisé UNIQUEMENT pour l'IP 109.61.81.65 (port 80)."
+#
+# # HTTP uniquement pour l'IP 109.61.81.65
+# echo " ↳ HTTP autorisé UNIQUEMENT pour l'IP 109.61.81.65 (port 80)"
+# sudo iptables -A OUTPUT -p tcp -d 109.61.81.65 --dport 80 -m state --state NEW,ESTABLISHED -j ACCEPT 2>>"$LOG_FILE" || log_to_file "Erreur lors de l'autorisation HTTP pour 109.61.81.65 (OUTPUT)"
+# sudo iptables -A INPUT -p tcp -s 109.61.81.65 --sport 80 -m state --state ESTABLISHED -j ACCEPT 2>>"$LOG_FILE" || log_to_file "Erreur lors de l'autorisation HTTP pour 109.61.81.65 (INPUT)"
+# log_to_file "HTTP autorisé UNIQUEMENT pour l'IP 109.61.81.65 (port 80)."
 
 # SSH uniquement vers IP GitHub (output seulement) - avec validation
 set +e
 echo " ↳ Configuration SSH vers GitHub..."
 ssh_rules_added=0
-for cidr in ${GITHUB_SSH_IPS[@]}; do
+for cidr in "${GITHUB_SSH_IPS[@]}"; do
   if [[ "$cidr" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[0-9]{1,2}$ ]]; then
     if sudo iptables -A OUTPUT -p tcp -d "$cidr" --dport 22 -m state --state NEW,ESTABLISHED -j ACCEPT 2>>"$LOG_FILE"; then
       ((ssh_rules_added++))
